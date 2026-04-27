@@ -34,63 +34,230 @@
 
 \setstretch{1.25}
 
-%---------- Title block ----------
-\title{%
-  \LARGE\bfseries In Silico Prioritization of HCM Variants:\\
-  A Comparative Study of Tabular and\\
-  Sequence-Based Hybrid Modeling\\[1.2em]
-  \large Phase II Progress Report\\
-  \normalsize RVCE Experiential Learning Programme
+%=======================================================================
+% Phase II Progress Report — HCM Variant Pathogenicity Classification
+% RVCE Experiential Learning Project | Academic Year 2025--26
+% Professionally Formatted Version
+%=======================================================================
+
+\documentclass[12pt,a4paper]{article}
+
+% -------------------- Packages --------------------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{array,longtable,multirow}
+\usepackage{xcolor}
+\usepackage{caption,subcaption}
+\usepackage{setspace}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{lmodern}
+\usepackage{parskip}
+\usepackage{titlesec}
+
+% -------------------- Hyperlinks --------------------
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    citecolor=blue!60!black,
+    urlcolor=blue!60!black
 }
-\author{%
-  Abhilash S.\\[0.3em]
-  \small Department of Biotechnology\\
-  \small RV College of Engineering, Bengaluru
-}
-\date{April 2026}
+
+% -------------------- Formatting --------------------
+\setstretch{1.2}
+\renewcommand{\arraystretch}{1.35}
+
+\titleformat{\section}
+{\Large\bfseries}
+{\thesection}{1em}{}
+
+\titleformat{\subsection}
+{\large\bfseries}
+{\thesubsection}{1em}{}
 
 %=======================================================================
 \begin{document}
-\maketitle
+
+%=======================================================================
+% TITLE PAGE
+%=======================================================================
+
+\begin{titlepage}
+\begin{center}
+
+\includegraphics[width=4cm]{}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.25\linewidth]{image2.png}
+   
+\end{figure}
+\vspace{0.5cm}
+
+{\Large\textbf{RV COLLEGE OF ENGINEERING}}\\
+Bengaluru -- 560059
+
+\vspace{0.4cm}
+
+{\large\textbf{REPORT ON}}\\
+{\LARGE\textbf{EXPERIENTIAL LEARNING}}\\
+Academic Year 2025--26
+
+\vspace{0.5cm}
+
+{\large\textbf{Health,Wellness\&Traditional Medicine}}
+
+\vspace{1cm}
+
+{\Large\textbf{Phase II Progress Report}}\\[0.3cm]
+{\LARGE\textbf{Unbiased Machine Learning for HCM: Utilizing Standing Variation to Reclassify Variants of Uncertain Significance
+}}
+
+\vspace{1cm}
+
+\begin{tabular}{|c|c|l|c|}
+\hline
+\textbf{Sl. No.} & \textbf{USN} & \textbf{Name} & \textbf{Program} \\
+\hline
+1 & 1RV25IM002 & Adhar Chaudhari       & IM   \\
+2 & 1RV25CV002 & Abhinandan Jaiswal    & CV   \\
+3 & 1RV25CS & Tejash Pathak            & CS   \\
+4 & 1RV25CS & Ekansh Nandan Sharma     & CS   \\
+\hline
+\end{tabular}
+
+\vspace{1cm}
+
+\begin{tabular}{|p{6.5cm}|p{6.5cm}|}
+\hline
+\centering\textbf{Faculty Mentor} &
+\centering\textbf{Chief Faculty Mentor}\tabularnewline
+\hline
+\centering Ashwin &
+\centering Dr. Sudarshan \tabularnewline
+\centering Assistant Professor &
+\centering Professor \tabularnewline
+\hline
+\end{tabular}
+
+\vfill
+
+
+\end{center}
+\end{titlepage}
+
+%=======================================================================
+% CERTIFICATE
+%=======================================================================
+
+\newpage
 \thispagestyle{empty}
+
+\begin{center}
+{\Huge\textbf{CERTIFICATE}}
+
+\vspace{1.5cm}
+
+This is to certify that the project entitled
+
+\vspace{0.4cm}
+
+{\Large\textbf{Phase II Progress Report}}\\
+{\Large\textbf{HCM Variant Pathogenicity Classification}}
+
+\vspace{0.8cm}
+
+is a bonafide work carried out by:
+
+\vspace{0.5cm}
+
+\begin{tabular}{ll}
+Abhinandan Jaiswal    & (1RV25CV002) \\
+Adhar Chaudhari     & (1RV25IM002) \\
+Ekansh Nandan Sharma  & (1RV25CS086) \\
+Tejash Pathak & (1RV25CS007) \\
+\end{tabular}
+
+\vspace{0.8cm}
+
+in fulfillment of the requirements for the completion of the
+
+\textbf{Experiential Learning Project}
+
+during the academic year \textbf{2025--26}.
+
+\end{center}
+
+\vspace{2cm}
+
+\noindent
+\begin{minipage}{0.45\textwidth}
+\textbf{Dr. Ashwin}\\
+Faculty Mentor
+\end{minipage}
+\hfill
+\begin{minipage}{0.45\textwidth}
+\raggedleft
+\textbf{Dr.Sudarshan}\\
+Chief Faculty Mentor
+\end{minipage}
+
+\vfill
+
+Date: 28-04-2026 \hfill Place: Bengaluru
+
 \newpage
 
-%---------- Table of Contents ----------
+%=======================================================================
+% TABLE OF CONTENTS
+%=======================================================================
+
 \tableofcontents
 \newpage
 
 %=======================================================================
+% ABSTRACT
+%=======================================================================
+
 \begin{abstract}
-Hypertrophic Cardiomyopathy (HCM) is the most prevalent inherited cardiac
-disorder, affecting approximately 1 in 500 individuals worldwide. Despite
-rapid advances in clinical genomic sequencing, a substantial proportion of
-identified missense variants remain classified as \emph{Variants of Uncertain
-Significance} (VUS), creating a diagnostic gap that impedes genetic
-counselling and family-cascade screening. This report documents the design,
-execution, and evaluation of a Phase~II comparative machine-learning
-investigation to address this gap.
 
-A dataset of \textbf{1,954 clinically annotated missense variants} spanning
-nine sarcomeric genes was assembled from ClinVar, ClinGen, gnomAD, ExAC,
-TOPMed, dbSNP, and UniProt. Two primary modelling streams were constructed
-and rigorously compared: (1)~a \emph{Tabular} stream powered by a tuned
-XGBoost ensemble operating on 29 hand-crafted biochemical and structural
-features, and (2)~a \emph{Sequence} stream powered by a one-dimensional
-Convolutional Neural Network (1D-CNN) operating on an 11-residue
-sliding-window encoding of the local amino-acid environment. A
-\emph{Late-Fusion Hybrid} stacking both streams via a Logistic Regression
-meta-learner constitutes the third experimental branch.
+Hypertrophic Cardiomyopathy (HCM) is the most prevalent inherited cardiac disorder, affecting approximately 1 in 500 individuals worldwide. Despite rapid advances in clinical genomic sequencing, a substantial proportion of identified missense variants remain classified as \emph{Variants of Uncertain Significance (VUS)}, creating a diagnostic gap that impedes genetic counselling and family-cascade screening.
 
-All models were evaluated under 5-Fold Stratified Cross-Validation to
-respect the 73.7\,\% pathogenic class imbalance. The Hybrid model achieved
-the best overall performance with an ROC-AUC of \textbf{0.8222}, a
-Matthews Correlation Coefficient (MCC) of \textbf{$\approx$0.45}, and a
-Balanced Accuracy of \textbf{0.753}, outperforming both individual streams
-across all balanced metrics. These findings validate the complementarity
-hypothesis and establish a strong foundation for Phase~III external
-validation using the SHaRe registry and protein language model embeddings.
+This report presents the design, implementation, and comparative evaluation of a Phase II machine-learning framework for HCM variant pathogenicity prediction.
+
+A dataset of \textbf{1,954 clinically annotated missense variants} spanning nine sarcomeric genes was curated using ClinVar, ClinGen, gnomAD, ExAC, TOPMed, dbSNP, and UniProt.
+
+Three modelling streams were developed:
+
+\begin{itemize}
+\item Tuned XGBoost (Tabular Features)
+\item 1D-CNN (Sequence Features)
+\item Late-Fusion Hybrid Ensemble
+\end{itemize}
+
+All models were evaluated using 5-Fold Stratified Cross Validation.
+
+The Hybrid model achieved the best overall performance:
+
+\begin{itemize}
+\item ROC-AUC = \textbf{0.8222}
+\item MCC = \textbf{0.45}
+\item Balanced Accuracy = \textbf{0.753}
+\end{itemize}
+
+These findings validate the complementarity of structured biochemical features and learned sequence representations.
+
 \end{abstract}
+
 \newpage
+
+% Continue with your original sections from Introduction onward
+% (Paste remaining content exactly below this point)
+
 
 %=======================================================================
 \section{Introduction}
