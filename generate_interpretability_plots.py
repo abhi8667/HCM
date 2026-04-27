@@ -75,10 +75,14 @@ print(f"Dataset: {N} variants  (benign={int((y==0).sum())}, pathogenic={int((y==
 # ══════════════════════════════════════════════════════════════════════════════
 print("\n── SHAP analysis (XGBoost) ──")
 
-X_tabular = pd.DataFrame(X_seq, columns=feature_names_seq)
+# XGBoost was trained on the 29 auxiliary (tabular) features, not the window features.
+X_aux_scaled_df = pd.DataFrame(
+    cnn_scaler_aux.transform(X_aux), columns=feature_names_aux
+)
+X_tabular = pd.DataFrame(X_aux, columns=feature_names_aux)
 
 explainer   = shap.TreeExplainer(xgb_model)
-shap_values = explainer(X_tabular)          # Explanation object  (N, 22)
+shap_values = explainer(X_tabular)          # Explanation object  (N, 29)
 
 fig, ax = plt.subplots(figsize=(10, 7))
 shap.summary_plot(
@@ -86,12 +90,12 @@ shap.summary_plot(
     X_tabular,
     plot_type="dot",          # beeswarm
     show=False,
-    max_display=22,
+    max_display=29,
     plot_size=None,
 )
 plt.title(
     "SHAP Summary – XGBoost feature contributions\n"
-    f"({N} variants, window features win_−5 … win_+5)",
+    f"({N} variants, 29 tabular features)",
     fontsize=11,
 )
 plt.tight_layout()
