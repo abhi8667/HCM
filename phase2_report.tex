@@ -501,10 +501,18 @@ the optimal threshold of 0.5294.
 
 \noindent
 From the confusion matrix:
+\noindent
+Treating each class in turn as the ``positive'' class:
 \begin{align}
-\text{Recall (Benign)}     &= \frac{TN}{TN + FP} = \frac{398}{513}  = 0.776 \label{eq:rec_b}\\
-\text{Recall (Pathogenic)} &= \frac{TP}{TP + FN} = \frac{1052}{1441} = 0.730 \label{eq:rec_p}\\
-\text{Precision (Benign)}  &= \frac{TN}{TN + FN} = \frac{398}{787}  = 0.506 \label{eq:prec_b}
+\text{Recall (Benign)}
+  &= \frac{\text{correctly predicted Benign}}{\text{all actual Benign}}
+   = \frac{TN}{TN + FP} = \frac{398}{398+115} = 0.776 \label{eq:rec_b}\\
+\text{Recall (Pathogenic)}
+  &= \frac{\text{correctly predicted Pathogenic}}{\text{all actual Pathogenic}}
+   = \frac{TP}{TP + FN} = \frac{1052}{1052+389} = 0.730 \label{eq:rec_p}\\
+\text{Precision (Benign)}
+  &= \frac{\text{correctly predicted Benign}}{\text{all predicted Benign}}
+   = \frac{TN}{TN + FN} = \frac{398}{398+389} = 0.506 \label{eq:prec_b}
 \end{align}
 
 \subsection{The Hybrid Advantage}
