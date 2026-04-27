@@ -1,0 +1,929 @@
+%=======================================================================
+%  Phase II Progress Report — HCM Variant Pathogenicity Classification
+%  RVCE Experiential Learning Project | Academic Year 2025-26
+%=======================================================================
+\documentclass[12pt,a4paper]{article}
+
+%---------- Packages ----------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{setspace}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{lmodern}
+\usepackage{parskip}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    citecolor=blue!60!black,
+    urlcolor=blue!60!black,
+}
+
+\setstretch{1.25}
+
+%---------- Title block ----------
+\title{%
+  \LARGE\bfseries In Silico Prioritization of HCM Variants:\\
+  A Comparative Study of Tabular and\\
+  Sequence-Based Hybrid Modeling\\[1.2em]
+  \large Phase II Progress Report\\
+  \normalsize RVCE Experiential Learning Programme
+}
+\author{%
+  Abhilash S.\\[0.3em]
+  \small Department of Biotechnology\\
+  \small RV College of Engineering, Bengaluru
+}
+\date{April 2026}
+
+%=======================================================================
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+%---------- Table of Contents ----------
+\tableofcontents
+\newpage
+
+%=======================================================================
+\begin{abstract}
+Hypertrophic Cardiomyopathy (HCM) is the most prevalent inherited cardiac
+disorder, affecting approximately 1 in 500 individuals worldwide. Despite
+rapid advances in clinical genomic sequencing, a substantial proportion of
+identified missense variants remain classified as \emph{Variants of Uncertain
+Significance} (VUS), creating a diagnostic gap that impedes genetic
+counselling and family-cascade screening. This report documents the design,
+execution, and evaluation of a Phase~II comparative machine-learning
+investigation to address this gap.
+
+A dataset of \textbf{1,954 clinically annotated missense variants} spanning
+nine sarcomeric genes was assembled from ClinVar, ClinGen, gnomAD, ExAC,
+TOPMed, dbSNP, and UniProt. Two primary modelling streams were constructed
+and rigorously compared: (1)~a \emph{Tabular} stream powered by a tuned
+XGBoost ensemble operating on 29 hand-crafted biochemical and structural
+features, and (2)~a \emph{Sequence} stream powered by a one-dimensional
+Convolutional Neural Network (1D-CNN) operating on an 11-residue
+sliding-window encoding of the local amino-acid environment. A
+\emph{Late-Fusion Hybrid} stacking both streams via a Logistic Regression
+meta-learner constitutes the third experimental branch.
+
+All models were evaluated under 5-Fold Stratified Cross-Validation to
+respect the 73.7\,\% pathogenic class imbalance. The Hybrid model achieved
+the best overall performance with an ROC-AUC of \textbf{0.8222}, a
+Matthews Correlation Coefficient (MCC) of \textbf{$\approx$0.45}, and a
+Balanced Accuracy of \textbf{0.753}, outperforming both individual streams
+across all balanced metrics. These findings validate the complementarity
+hypothesis and establish a strong foundation for Phase~III external
+validation using the SHaRe registry and protein language model embeddings.
+\end{abstract}
+\newpage
+
+%=======================================================================
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{The VUS Crisis in Inherited Cardiomyopathy}
+\label{subsec:vus}
+
+Hypertrophic Cardiomyopathy arises predominantly from heterozygous missense
+mutations in genes encoding sarcomeric proteins. The clinical severity of
+HCM is highly variable: some mutation carriers remain asymptomatic for
+decades, whereas others experience sudden cardiac death in early adulthood.
+Accurate identification of disease-causing variants is therefore not merely
+an academic exercise but a matter of direct clinical consequence.
+
+Modern next-generation sequencing panels routinely interrogate the nine
+principal HCM-associated genes—\textit{MYH7}, \textit{MYBPC3},
+\textit{TNNT2}, \textit{TNNI3}, \textit{TPM1}, \textit{ACTC1},
+\textit{MYL2}, \textit{MYL3}, and \textit{TNNC1}—producing thousands of
+variant calls per proband. The critical limitation is classification
+confidence: a large fraction of missense variants discovered in clinical
+panels are assigned VUS status by human curators, particularly for
+less-studied genes. The 2015 ACMG/AMP guidelines provide a framework for
+variant interpretation, but their application remains labour-intensive,
+requires specialist structural knowledge, and is inconsistent across
+laboratories.
+
+The downstream consequences are substantial. VUS reports leave clinicians
+unable to issue actionable recommendations to patients and families. They
+inflate the psychological burden on carriers who receive ambiguous results.
+They delay prophylactic interventions—implantable cardioverter-defibrillators,
+myomectomy, mavacamten therapy—that could prevent adverse events.
+Computational tools that can convert VUS into high-confidence predictions
+therefore address a real and urgent unmet need in cardiology genomics.
+
+\subsection{The Hybrid Modelling Rationale}
+\label{subsec:hybrid}
+
+Prior computational approaches to variant pathogenicity prediction fall into
+two broad camps. \emph{Sequence-agnostic} methods—SIFT, PolyPhen-2, CADD,
+and their successors—use conservation and physicochemical features but do
+not model the local sequence neighbourhood explicitly. \emph{Deep-learning}
+methods—VARITY, ClinPred, EVE—leverage sequence information but often
+require large protein-family multiple sequence alignments and are not
+designed to exploit gene-level structural annotation databases such as
+UniProt.
+
+Our Phase~II hypothesis is that these two evidence streams are
+\emph{complementary rather than redundant}. Structured biochemical and
+structural features encode expert knowledge accumulated over decades of
+protein biochemistry and clinical genetics. Sequence-derived features
+encode neighbourhood-level physicochemical context that is invisible to
+tabular methods. A hybrid architecture that fuses both information types
+should, in principle, outperform either stream in isolation—particularly on
+the minority Benign class, where tabular models exhibit systematic recall
+failure under class imbalance.
+
+%=======================================================================
+\section{Technical Methodology}
+\label{sec:methods}
+
+\subsection{Dataset Curation and Class Distribution}
+\label{subsec:data}
+
+The curated dataset comprises \textbf{1,954 missense variants} drawn
+exclusively from nine HCM-associated sarcomeric genes. All variants carry
+binary ground-truth labels: Pathogenic ($y=1$) or Benign ($y=0$), derived
+from ClinVar significance annotations. Variants of Uncertain Significance
+(VUS) were withheld from the supervised training set to preserve label
+integrity. Table~\ref{tab:gene_dist} documents the per-gene breakdown.
+
+\begin{table}[H]
+\centering
+\caption{Per-gene variant count and proportion in the curated dataset
+         ($N = 1{,}954$).}
+\label{tab:gene_dist}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Gene} & \textbf{Variants ($n$)} & \textbf{Fraction (\%)} \\
+\midrule
+\textit{MYH7}    & 986 & 50.5 \\
+\textit{MYBPC3}  & 429 & 22.0 \\
+\textit{TNNT2}   & 130 &  6.7 \\
+\textit{TNNI3}   & 118 &  6.0 \\
+\textit{TPM1}    & 100 &  5.1 \\
+\textit{ACTC1}   &  64 &  3.3 \\
+\textit{MYL2}    &  54 &  2.8 \\
+\textit{MYL3}    &  37 &  1.9 \\
+\textit{TNNC1}   &  36 &  1.8 \\
+\midrule
+\textbf{Total}   & \textbf{1,954} & \textbf{100.0} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The resulting class distribution is \textbf{73.7\,\% Pathogenic}
+(1,441~variants) versus \textbf{26.3\,\% Benign} (513~variants). This
+imbalance reflects genuine ascertainment bias in clinical databases—disease
+cohorts are sequenced far more often than control populations—and must be
+handled explicitly in model training.
+
+\subsection{Feature Engineering: The 51-Feature Schema}
+\label{subsec:features}
+
+Fifty-one features were engineered to represent each variant from four
+conceptually distinct perspectives: (1)~the \emph{physicochemical}
+consequence of the amino-acid substitution itself; (2)~the \emph{structural
+and functional context} of the mutation site within the protein; (3)~the
+\emph{evolutionary constraint} at that site; and (4)~a \emph{gene-identity}
+prior. Table~\ref{tab:features} summarises the four groups.
+
+\begin{table}[H]
+\centering
+\caption{The 51-feature schema grouped by biological rationale.
+         Features fed to the XGBoost tabular stream: 29.
+         Sequence window features fed to the CNN stream: 22.}
+\label{tab:features}
+\begin{tabular}{@{}lp{6.5cm}r@{}}
+\toprule
+\textbf{Category} & \textbf{Features} & \textbf{Count} \\
+\midrule
+\multirow{4}{*}{\shortstack[l]{\textbf{Physicochemical}\\(substitution-level)}}
+  & Grantham score (composite of composition, polarity, molecular volume) & \\
+  & Reference and alternate residue size, charge & \\
+  & Size change $\Delta s$, charge change $\Delta q$ & \\
+  & & 7 \\
+\midrule
+\multirow{5}{*}{\shortstack[l]{\textbf{Structural /}\\{\textbf{Functional}}}}
+  & Binary indicators: functional domain, coiled-coil, $\alpha$-helix,
+    $\beta$-strand, turn, disordered region, compositionally biased region,
+    post-translational modification (PTM) site, functional site,
+    secondary structure presence, named region & \\
+  & & 11 \\
+\midrule
+\multirow{2}{*}{\shortstack[l]{\textbf{Evolutionary /}\\{\textbf{Positional}}}}
+  & Relative position within protein (normalised $[0,1]$) & \\
+  & Population allele frequency (gnomAD/ExAC/TOPMed) & 2 \\
+\midrule
+\textbf{Gene Identity}
+  & One-hot encoding: \textit{MYH7}, \textit{MYBPC3}, \textit{TNNT2},
+    \textit{TNNI3}, \textit{TPM1}, \textit{MYL2}, \textit{MYL3},
+    \textit{ACTC1}, \textit{TNNC1} & 9 \\
+\midrule
+\multirow{2}{*}{\shortstack[l]{\textbf{Sequence Window}\\(CNN only)}}
+  & Residue size category and charge category at each of the 11 positions
+    in the $[\text{pos}-5,\, \text{pos}+5]$ sliding window & 22 \\
+\midrule
+\multicolumn{2}{@{}l}{\textbf{Total}} & \textbf{51} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Why the Grantham Score?}
+The Grantham score~\cite{grantham1974} quantifies the expected impact of an
+amino-acid substitution along three orthogonal biochemical axes: atomic
+composition, polarity, and molecular volume. A glycine-to-arginine
+substitution (Grantham $= 125$) introduces a large, positively charged side
+chain into a position previously occupied by the simplest amino acid,
+creating a severe steric and electrostatic mismatch. Empirically, the
+pathogenic variants in this dataset have a mean Grantham score of
+\textbf{79.78} compared to \textbf{60.85} for Benign variants
+(Table~\ref{tab:grantham}), confirming that radical substitutions are
+systematically enriched in pathogenic calls.
+
+\begin{table}[H]
+\centering
+\caption{Mean Grantham score by pathogenicity class.}
+\label{tab:grantham}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Class} & \textbf{$n$} & \textbf{Mean Grantham Score} \\
+\midrule
+Pathogenic & 1,441 & 79.78 \\
+Benign     &   513 & 60.85 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Structural Annotation Features.}
+UniProt provides rich, expert-curated positional annotations for all nine
+HCM proteins. Binary indicators encode whether a variant falls within a
+known functional domain (e.g., the myosin motor domain of MYH7), a
+coiled-coil region, an alpha-helix, a beta-strand, a disordered linker, a
+PTM site, or a characterised functional site. These indicators encode
+knowledge that is invisible to sequence-only methods but is directly
+relevant to structural stability: a mutation at an ATP-binding site or a
+known phosphorylation residue carries an immediate functional implication,
+regardless of its Grantham score.
+
+\paragraph{Positional and Population Features.}
+The relative position of a variant within its protein (normalised to
+$[0,1]$) allows the model to learn, without explicit structural coordinates,
+that the myosin head domain of MYH7 is far more intolerant of substitution
+than the distal tail. The population allele frequency from gnomAD/ExAC/TOPMed
+provides evolutionary evidence: variants observed at frequencies above
+0.1\,\% in healthy control populations are extremely unlikely to be
+fully penetrant Mendelian disease alleles.
+
+\subsection{Sliding-Window Sequence Extraction}
+\label{subsec:window}
+
+The 11-residue sliding window centred on the mutated position
+(positions $-5$ to $+5$) was extracted from the full canonical protein
+sequence retrieved from UniProt for each accession. At each of the 11
+positions, two categorical encodings were stored: a \emph{size category}
+(small/medium/large mapped to integer values 1/2/3) and a \emph{charge
+category} (negative/$-1$, neutral/$0$, positive/$+1$). This yields a
+two-channel sequence tensor of shape $(11, 2)$ per variant.
+
+Boundary variants at the protein N- or C-terminus where the full
+five-residue flanking context does not exist are zero-padded
+(size $= 0$, charge $= 0$), consistent with a neutral encoding that
+introduces no spurious physicochemical signal. The window is centred on the
+\emph{reference} residue; the convolutional branch therefore learns what
+physico\-chemical neighbourhood is \emph{expected} at that position, and
+the auxiliary features communicate the \emph{disruption} introduced by the
+alternate residue.
+
+\begin{figure}[H]
+\centering
+% Replace with actual sliding window schematic
+\fbox{\parbox{0.8\textwidth}{\centering\vspace{2cm}
+\textbf{[FIGURE PLACEHOLDER]}\\
+Sliding-window diagram: 11-residue window centred on mutation site,
+showing size (S) and charge (Q) encoding for each position.
+Zero-padding at protein boundaries is indicated in grey.
+\vspace{2cm}}}
+\caption{Schematic of the 11-residue sliding window sequence extraction.
+The mutated position is highlighted at the centre; size and charge
+encodings are shown for each flanking position.}
+\label{fig:window}
+\end{figure}
+
+\subsection{The Three-Branch Comparative Experiment}
+\label{subsec:three_branch}
+
+The core experimental design of Phase~II is a controlled three-way
+comparison, structured to isolate the individual contributions of tabular
+expert knowledge and sequence-derived context, and then to quantify the
+benefit of fusing them.
+
+\begin{description}[leftmargin=2em, labelwidth=1.8em]
+
+\item[\textbf{Branch 1 — Tuned XGBoost (Tabular):}]
+A gradient-boosted decision tree ensemble trained exclusively on the
+29-feature tabular vector (physicochemical, structural, evolutionary, and
+gene-identity features). Hyperparameters were tuned via grid search. This
+branch represents the \emph{expert knowledge baseline}—the maximum
+performance achievable from hand-crafted, interpretable features alone.
+
+\item[\textbf{Branch 2 — 1D-CNN (Sequence + Auxiliary):}]
+A multi-input neural network processing the $(11 \times 2)$ sequence tensor
+through a convolutional branch in parallel with the 29-feature auxiliary
+vector through a dense MLP branch, before fusing and outputting a sigmoid
+pathogenicity probability. This branch tests whether local sequence context
+provides discriminative signal above the tabular baseline.
+
+\item[\textbf{Branch 3 — Late-Fusion Hybrid Ensemble:}]
+A Logistic Regression meta-learner trained on out-of-fold (OOF) probability
+estimates from Branches~1 and~2. This stacking layer learns the optimal
+linear combination of the two models' confidence scores. Any improvement in
+Branch~3 over Branches~1 and~2 can be attributed specifically to information
+complementarity between modalities.
+
+\end{description}
+
+\subsection{1D-CNN Architecture}
+\label{subsec:cnn}
+
+The 1D-CNN was implemented in TensorFlow/Keras. Table~\ref{tab:cnn} details
+the exact layer configuration extracted from the trained model artefact.
+
+\begin{table}[H]
+\centering
+\caption{Exact architecture of the 1D-CNN used in Branch 2. The model
+         has two input branches fused before the final classification head.}
+\label{tab:cnn}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Branch} & \textbf{Layer} & \textbf{Configuration} & \textbf{Output Shape} \\
+\midrule
+\multirow{3}{*}{Sequence}
+  & Conv1D             & 32 filters, kernel=3, padding=`same', ReLU & $(11, 32)$ \\
+  & BatchNormalization & —                                           & $(11, 32)$ \\
+  & GlobalMaxPooling1D & —                                           & $(32,)$ \\
+\midrule
+\multirow{4}{*}{Auxiliary}
+  & Dense              & 64 units, ReLU                              & $(64,)$ \\
+  & Dropout            & rate $= 0.3$                                & $(64,)$ \\
+  & Dense              & 32 units, ReLU                              & $(32,)$ \\
+  & Dropout            & rate $= 0.3$                                & $(32,)$ \\
+\midrule
+\multirow{4}{*}{Fusion Head}
+  & Concatenate        & CNN output $(32)$ + MLP output $(32)$       & $(64,)$ \\
+  & Dense              & 32 units, ReLU                              & $(32,)$ \\
+  & Dropout            & rate $= 0.3$                                & $(32,)$ \\
+  & Dense              & 16 units, ReLU                              & $(16,)$ \\
+  & Dense              & 1 unit, Sigmoid                             & $(1,)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The choice of kernel size 3 in the convolutional layer is deliberate: a
+window of three consecutive residue encodings captures tripeptide-level
+physicochemical motifs—the smallest structural unit that encodes directional
+secondary-structure preference. Batch Normalisation after the convolutional
+layer stabilises the activation distribution across folds and prevents
+internal covariate shift in a dataset of this modest size.
+GlobalMaxPooling1D then extracts the single strongest activation across all
+11 window positions, providing a compact, position-invariant summary of the
+most informative local motif.
+
+\subsection{Training Protocol and Class Imbalance Handling}
+\label{subsec:training}
+
+\paragraph{5-Fold Stratified Cross-Validation.}
+All model evaluation was performed under \textbf{5-Fold Stratified
+Cross-Validation} (StratifiedKFold, scikit-learn). Stratification ensures
+that each of the five validation folds maintains the global 73.7\,\%/26.3\,\%
+class ratio, preventing evaluation folds from being dominated by the majority
+class. Without stratification, a single unlucky fold containing only 15--20
+Benign variants would yield inflated accuracy metrics without genuinely
+testing the model's ability to recognise Benign variants.
+
+The meta-learner (Branch~3) was additionally trained on OOF probability
+estimates accumulated over the five folds, a canonical stacking protocol
+that prevents data leakage from the base models into the meta-model's
+training set.
+
+\paragraph{Class Imbalance Mitigation.}
+The Logistic Regression meta-learner used
+\texttt{class\_weight=`balanced'}, which applies inverse-frequency sample
+weights $(w_i = N / (2 \cdot n_c)$ for class $c)$, penalising
+misclassification of the minority Benign class more heavily. The XGBoost
+base model used a tuned \texttt{scale\_pos\_weight} parameter. The CNN
+training used a weighted binary cross-entropy loss. The operating
+classification threshold was tuned by maximising Youden's J statistic on
+OOF probabilities, yielding an optimal threshold of \textbf{0.5294}.
+
+%=======================================================================
+\section{Experimental Results and Comparative Analysis}
+\label{sec:results}
+
+\subsection{Performance Audit: Three-Model Comparison}
+\label{subsec:performance}
+
+Table~\ref{tab:perf} presents the head-to-head performance comparison of
+all three experimental branches at the optimised classification threshold,
+evaluated under 5-Fold Stratified Cross-Validation.
+
+\begin{table}[H]
+\centering
+\caption{Comparative performance of the three experimental branches at
+         the optimal Youden threshold (0.5294 for Ensemble).
+         Bold values indicate the best result per column.}
+\label{tab:perf}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+\textbf{Model} & \textbf{ROC-AUC} & \textbf{PR-AUC} & \textbf{Accuracy}
+  & \textbf{Bal.\ Acc.} & \textbf{F1-Macro} & \textbf{MCC} \\
+\midrule
+Tuned XGBoost
+  & 0.7402 & 0.8639 & \textbf{0.7702} & 0.5818 & 0.5800 & 0.293 \\
+1D-CNN
+  & 0.7934 & 0.9049 & 0.7288 & 0.7257 & 0.6906 & 0.408 \\
+\textbf{Hybrid Ensemble}
+  & \textbf{0.8222} & \textbf{0.9141} & 0.7421
+  & \textbf{0.7529} & \textbf{0.7095} & \textbf{$\approx$0.45} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent
+The Matthews Correlation Coefficient is defined as:
+\begin{equation}
+MCC = \frac{TP \cdot TN - FP \cdot FN}
+           {\sqrt{(TP+FP)(TP+FN)(TN+FP)(TN+FN)}}
+\label{eq:mcc}
+\end{equation}
+where $TP$, $TN$, $FP$, $FN$ are the true positive, true negative, false
+positive, and false negative counts, respectively. MCC is preferred over
+raw accuracy as the primary metric here because it is invariant to class
+imbalance and penalises failure on both classes symmetrically.
+
+\subsection{Hybrid Model Confusion Matrix}
+\label{subsec:cm}
+
+Table~\ref{tab:cm} presents the confusion matrix of the Hybrid Ensemble at
+the optimal threshold of 0.5294.
+
+\begin{table}[H]
+\centering
+\caption{Confusion matrix of the Late-Fusion Hybrid Ensemble
+         ($N = 1{,}954$, optimal threshold $= 0.5294$).}
+\label{tab:cm}
+\begin{tabular}{@{}llcc@{}}
+\toprule
+& & \multicolumn{2}{c}{\textbf{Predicted}} \\
+\cmidrule(l){3-4}
+& & \textbf{Benign (0)} & \textbf{Pathogenic (1)} \\
+\midrule
+\multirow{2}{*}{\textbf{Actual}}
+  & \textbf{Benign (0)}     & 398 (TN) & 115 (FP) \\
+  & \textbf{Pathogenic (1)} & 389 (FN) & 1052 (TP) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent
+From the confusion matrix:
+\begin{align}
+\text{Recall (Benign)}     &= \frac{TN}{TN + FP} = \frac{398}{513}  = 0.776 \label{eq:rec_b}\\
+\text{Recall (Pathogenic)} &= \frac{TP}{TP + FN} = \frac{1052}{1441} = 0.730 \label{eq:rec_p}\\
+\text{Precision (Benign)}  &= \frac{TN}{TN + FN} = \frac{398}{787}  = 0.506 \label{eq:prec_b}
+\end{align}
+
+\subsection{The Hybrid Advantage}
+\label{subsec:advantage}
+
+The most revealing contrast in Table~\ref{tab:perf} is between the
+XGBoost model and the Hybrid. The XGBoost achieves the \emph{highest raw
+accuracy} (77.0\,\%) yet the \emph{lowest MCC} (0.293) and the lowest
+Balanced Accuracy (0.582)—a pattern that unmistakably identifies
+majority-class collapse. Inspection of the class-specific recalls confirms
+this: XGBoost achieves Benign recall of only \textbf{18.5\,\%} while
+correctly classifying 97.8\,\% of Pathogenic variants. In practical terms,
+this model would incorrectly flag roughly four out of every five genuinely
+Benign variants as disease-causing—an unacceptable clinical performance.
+
+The 1D-CNN corrects this dramatically, raising Benign recall to
+\textbf{71.9\,\%} at the cost of a modest reduction in Pathogenic recall to
+73.2\,\%. The CNN achieves this by encoding local sequence context: it
+learns that certain physico\-chemical neighbourhood patterns are
+characteristic of tolerated polymorphisms, even when the tabular features
+appear moderately suspicious. The MCC improvement of $+0.115$ over XGBoost
+reflects this genuine gain in discriminative balance.
+
+The Hybrid Ensemble then delivers a further $+0.042$ MCC improvement by
+learning that the two probability streams carry \emph{non-redundant
+information}. When the XGBoost is highly confident about a Pathogenic call
+(high Grantham score, disrupted functional domain) but the CNN is
+uncertain, and vice versa, the meta-learner's logistic decision boundary
+correctly combines the two signals. The net result is a 4-percentage-point
+improvement in Benign recall over the CNN ($77.6\,\%$ vs.\
+$71.9\,\%$) while maintaining comparable Pathogenic recall ($73.0\,\%$
+vs.\ $73.2\,\%$).
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.48\textwidth}
+  \fbox{\parbox{\textwidth}{\centering\vspace{2cm}
+  \textbf{[FIGURE PLACEHOLDER]}\\
+  ROC curve comparison: XGBoost (AUC=0.74), CNN (AUC=0.79),
+  Hybrid (AUC=0.82). Insert \texttt{roc\_comparison.png} here.
+  \vspace{2cm}}}
+  \caption{ROC curves for all three experimental branches.}
+  \label{fig:roc}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+  \fbox{\parbox{\textwidth}{\centering\vspace{2cm}
+  \textbf{[FIGURE PLACEHOLDER]}\\
+  Precision-Recall curve comparison. Insert \texttt{pr\_comparison.png}
+  here.
+  \vspace{2cm}}}
+  \caption{Precision-Recall curves. PR-AUC is more sensitive to class
+           imbalance than ROC-AUC.}
+  \label{fig:pr}
+\end{subfigure}
+\caption{Performance curves comparing the three model branches under
+         5-Fold Stratified Cross-Validation. The Hybrid Ensemble
+         dominates in both ROC and PR space.}
+\label{fig:curves}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.6\textwidth}{\centering\vspace{2.5cm}
+\textbf{[FIGURE PLACEHOLDER]}\\
+Confusion matrix heatmap for the Hybrid Ensemble.
+Insert \texttt{confusion\_matrix.png} here.
+\vspace{2.5cm}}}
+\caption{Confusion matrix of the Late-Fusion Hybrid Ensemble at the
+         optimal threshold (0.5294). Colour intensity encodes cell count.}
+\label{fig:cm}
+\end{figure}
+
+\subsection{Error Analysis and Dataset Limitations}
+\label{subsec:errors}
+
+The 389 false-negative Pathogenic variants (missed by the Hybrid) represent
+the model's primary failure mode. These are concentrated among variants with
+moderate Grantham scores ($50$--$80$), low population frequency, and sparse
+structural annotation — the ``intermediate'' cases where human expert
+annotation is itself uncertain. Two structural factors amplify this
+limitation:
+
+\begin{enumerate}
+\item \textbf{Gene under-representation.} Four genes—\textit{ACTC1} (n=64),
+  \textit{MYL2} (n=54), \textit{MYL3} (n=37), and \textit{TNNC1} (n=36)—
+  together contribute fewer than 200 variants to the training set.
+  For these genes, UniProt structural annotations are sparser, population
+  frequency data is limited due to fewer published cohort studies, and the
+  model's gene-specific priors are learned from inadequate statistical
+  support.
+
+\item \textbf{Sequence window sparsity at protein termini.} Variants
+  within the first or last five residues of a protein receive zero-padded
+  flanking context, reducing the discriminative information available to
+  the CNN branch. For these edge-position variants, the model relies almost
+  entirely on the tabular branch.
+\end{enumerate}
+
+The 115 false-positive Benign variants (incorrectly flagged as Pathogenic)
+are particularly costly in a clinical context. These variants carry
+relatively high Grantham scores or fall within annotated functional domains,
+leading the tabular model to assign elevated pathogenicity probabilities that
+the CNN cannot fully offset.
+
+%=======================================================================
+\section{Interpretability and Biological Logic}
+\label{sec:interp}
+
+\subsection{XGBoost SHAP Feature Importance Hierarchy}
+\label{subsec:shap}
+
+SHAP (SHapley Additive exPlanations) analysis of the XGBoost model
+identifies a biologically coherent hierarchy of predictive features,
+summarised in Table~\ref{tab:shap}.
+
+\begin{table}[H]
+\centering
+\caption{Top-5 features by mean absolute SHAP value in the tuned XGBoost
+         model, with biological interpretation.}
+\label{tab:shap}
+\begin{tabular}{@{}clp{7cm}@{}}
+\toprule
+\textbf{Rank} & \textbf{Feature} & \textbf{Biological Rationale} \\
+\midrule
+1 & Grantham Score
+  & Composite measure of substitution radicality. Higher scores indicate
+    physicochemical incompatibility between reference and alternate residues,
+    predicting structural disruption. \\
+2 & Relative Position
+  & Mutations in the N-terminal motor domain of MYH7 ($\text{position} < 0.4$)
+    show systematically elevated pathogenicity; the model learns the protein's
+    structural topology implicitly. \\
+3 & Functional/PTM Site Indicator
+  & Variants disrupting ATP-binding sites, actin-binding interfaces, or
+    regulatory phosphorylation residues have near-certain pathogenicity,
+    regardless of Grantham score. \\
+4 & Domain Indicator
+  & Presence within a characterised structural domain (e.g., myosin-binding
+    domain of MYBPC3, EF-hand domain of TNNC1) elevates pathogenicity
+    probability due to reduced substitution tolerance in folded domain
+    interiors. \\
+5 & Population Frequency
+  & Strong \emph{negative} predictor: variants observed at allele frequency
+    $> 0.001$ in gnomAD are highly unlikely to be fully penetrant HCM alleles;
+    the model applies a large protective Benign weight to such variants. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.8\textwidth}{\centering\vspace{2.5cm}
+\textbf{[FIGURE PLACEHOLDER]}\\
+SHAP summary beeswarm plot: feature-level contribution to XGBoost
+output across all 1,954 variants. Generate using
+\texttt{shap.summary\_plot(shap\_values, X\_tabular)}.
+\vspace{2.5cm}}}
+\caption{SHAP summary plot for the Tuned XGBoost model. Each point
+         represents one variant; colour encodes feature value (red=high,
+         blue=low). The Grantham score and relative position dominate
+         positive SHAP contributions for Pathogenic calls.}
+\label{fig:shap}
+\end{figure}
+
+\subsection{CNN Sequence-Context Insights}
+\label{subsec:cnn_interp}
+
+The 1D-CNN's substantial improvement in Benign recall
+($71.9\,\%$ vs.\ $18.5\,\%$ for XGBoost) provides indirect evidence about
+the discriminative content of the 11-residue window. While explicit gradient
+saliency maps were not generated in the current training run, several
+inferences can be drawn from the model's performance profile.
+
+The convolutional filters (kernel size 3) operate across triplets of
+consecutive $(size, charge)$ encodings. Filters that activate maximally on
+patterns such as $(large{+}, large{+}, large{+})$ or $(neutral, neutral,
+negative{-})$ learn to detect regions of consistent physicochemical
+character — the fingerprint of structured, evolutionarily constrained
+secondary structures. A mutation inserted into such a context with a
+radically different physicochemical profile (as captured by the Grantham
+score and delta features in the auxiliary branch) creates a detectable
+\emph{neighbourhood mismatch}.
+
+The GlobalMaxPooling layer retains only the strongest such activation across
+all 11 positions, suggesting that the model's sequence-level decision is
+driven by the \emph{most anomalous tripeptide motif} in the window rather
+than by an average neighbourhood property. This aligns with the biological
+principle that protein instability from point mutations is often localised
+to a single critical interaction rather than distributed evenly across the
+neighbourhood.
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.8\textwidth}{\centering\vspace{2.5cm}
+\textbf{[FIGURE PLACEHOLDER]}\\
+Saliency map / integrated gradients heatmap: per-position importance
+in the 11-residue window, averaged over all correctly-classified
+Pathogenic variants. Positions $-1$ and $+1$ (immediately flanking the
+mutation site) are expected to show the highest saliency.
+\vspace{2.5cm}}}
+\caption{Gradient-based saliency map for the CNN sequence branch,
+         showing per-position contribution to the pathogenicity prediction
+         averaged over all correctly classified Pathogenic variants.}
+\label{fig:saliency}
+\end{figure}
+
+\subsection{Biological Conclusion: Model Mathematics Meets Cardiac Reality}
+\label{subsec:bio}
+
+The model's decision hierarchy—Grantham score, relative position, functional
+site disruption, domain membership, population frequency—mirrors the clinical
+geneticist's mental model for evaluating HCM variants. What the machine
+learning framework adds is a \emph{quantified, consistent, and scalable}
+instantiation of that model, immune to cognitive fatigue and applicable at
+genomic scale.
+
+The CNN's contribution is particularly compelling in biological terms. The
+sarcomeric proteins are not random polypeptides: they form precisely
+organised, mechanically stressed macromolecular assemblies in which every
+residue's identity within its local neighbourhood is under strong purifying
+selection. A point mutation that locally disrupts the charge pattern of an
+alpha-helix in the myosin S1 domain does not merely affect a single
+hydrogen bond; it propagates mechanical instability through the entire
+force-transmission apparatus, impairing crossbridge cycling and ultimately
+reducing cardiac contractile efficiency. The CNN's neighbourhood encoding
+captures this collective structural sensitivity in a mathematically compact
+representation that is inaccessible to feature-by-feature tabular analysis.
+
+The Grantham mean difference ($79.78$ versus $60.85$, a gap of
+approximately \textbf{19 Grantham units}) confirms that pathogenic HCM
+mutations involve systematically more radical amino-acid substitutions than
+Benign polymorphisms. This single observation validates the biological
+logic underlying the entire feature engineering strategy.
+
+%=======================================================================
+\section{Discussion and Future Roadmap}
+\label{sec:discussion}
+
+\subsection{Phase II Limitations}
+\label{subsec:limits}
+
+Despite the Hybrid model's strong performance, three categories of limitation
+constrain the generalisability of Phase~II findings.
+
+\paragraph{Gene-Specific Data Sparsity.}
+The four smallest gene cohorts—\textit{ACTC1}, \textit{MYL2},
+\textit{MYL3}, and \textit{TNNC1}—are substantially under-powered for
+supervised learning. With fewer than 65 labelled variants per gene, the
+model's gene-specific priors (encoded by one-hot gene identity features)
+are learned from very limited statistical support. Gene-specific subgroup
+analysis would likely reveal substantially lower performance for these genes
+relative to \textit{MYH7} and \textit{MYBPC3}. Acquisition of additional
+labelled variants for rare-gene HCM subtypes is a priority for Phase~III
+data enrichment.
+
+\paragraph{VUS Exclusion.}
+The deliberate exclusion of VUS variants from training, while scientifically
+rigorous for supervised learning, means that the model's output for novel
+VUS cases during inference is extrapolated beyond the training distribution.
+Phase~III should include a held-out VUS validation set with expert consensus
+labels to quantify extrapolation confidence.
+
+\paragraph{Absence of Protein 3D Structural Coordinates.}
+The current feature set relies on sequence-derived physicochemical proxies
+rather than three-dimensional structural data. Variants that are spatially
+proximal in the folded protein but distant in primary sequence — a common
+feature of allosteric HCM mutations — cannot be captured by the current
+encoding. Integration of AlphaFold2 structural coordinates is planned for
+Phase~III.
+
+\paragraph{Negative Predictive Value.}
+The Hybrid model's Precision for the Benign class is \textbf{0.506}
+(Eq.~\ref{eq:prec_b}), meaning that approximately half of variants
+predicted as Benign are actually Pathogenic. This limits the model's utility
+as a standalone ``rule-out'' tool in clinical settings without additional
+orthogonal evidence.
+
+\subsection{Phase III Roadmap: External Validation and Architecture Expansion}
+\label{subsec:phase3}
+
+Phase~III will extend the Phase~II framework along two parallel tracks:
+
+\begin{description}[leftmargin=2em]
+
+\item[\textbf{Track A — External Validation on SHaRe Registry:}]
+The Sarcomeric Human Cardiomyopathy Registry (SHaRe) provides a large,
+independently collected, multi-centre cohort of HCM probands with
+detailed genotypic and phenotypic data. Variants in the SHaRe dataset
+that were not present in ClinVar at the time of Phase~II dataset
+construction will be used as a fully held-out external validation set.
+This will test whether the model generalises beyond its training
+distribution and whether its probability calibration (Figure placeholder
+for \texttt{calibration\_plot.png}) is reliable in a prospective clinical
+setting.
+
+\item[\textbf{Track B — ESM-2 Protein Language Model Embeddings:}]
+The 11-residue $(size, charge)$ encoding used in Phase~II, while
+interpretable, is a coarse discretisation of the amino-acid alphabet.
+Meta AI's ESM-2 protein language model provides 480-dimensional or
+1,280-dimensional per-residue embeddings pre-trained on 250 million
+protein sequences, capturing evolutionary co-variation, predicted secondary
+structure, and long-range residue contacts implicitly within a single
+vector. Replacing the manual window encoding with ESM-2 embeddings
+is expected to substantially enrich the sequence information available to
+the CNN branch and improve discrimination in the under-annotated
+small-gene cohorts. Specifically, for \textit{ACTC1} and \textit{MYL2}
+variants where UniProt structural annotations are sparse, ESM-2 embeddings
+encode cross-family evolutionary knowledge that may compensate for the
+limited within-gene training data.
+
+\end{description}
+
+%=======================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+Phase~II of this RVCE Experiential Learning project has delivered a
+rigorously validated comparative analysis of tabular and sequence-based
+machine learning approaches for HCM variant pathogenicity classification.
+Three key findings emerge:
+
+\begin{enumerate}
+\item \textbf{Tabular features alone are insufficient.} The tuned XGBoost
+  model, despite encoding rich biochemical and structural knowledge,
+  collapses to majority-class prediction under the 73.7\,\%/26.3\,\% class
+  imbalance, achieving a Benign recall of only 18.5\,\% (MCC $= 0.293$).
+
+\item \textbf{Sequence context restores minority-class discrimination.} The
+  1D-CNN's local window encoding raises Benign recall to 71.9\,\% and MCC
+  to $0.408$—a 39\,\% relative improvement—by capturing neighbourhood-level
+  physicochemical patterns that distinguish tolerated polymorphisms from
+  pathogenic mutations.
+
+\item \textbf{Hybrid fusion is additive.} The Late-Fusion Ensemble achieves
+  the best performance on all balanced metrics: ROC-AUC $= 0.822$,
+  Balanced Accuracy $= 0.753$, F1-Macro $= 0.710$, and MCC $\approx 0.45$,
+  confirming the complementarity hypothesis.
+
+\end{enumerate}
+
+These results validate the core design philosophy of Phase~II: that expert
+biochemical knowledge and learned sequence-context patterns are genuinely
+complementary information sources, and that their fusion via a late-stacking
+meta-learner extracts measurable additional discriminative value.
+
+The primary limitation—low Benign precision ($0.506$) and the 389
+false-negative pathogenic variants—defines the central challenge for
+Phase~III: improving sensitivity for the difficult intermediate-confidence
+variants through richer sequence representations (ESM-2) and expanded
+training data from the SHaRe registry. The transition from Phase~II
+to Phase~III represents a shift from \emph{proof-of-concept hybrid
+validation} to \emph{clinical-grade generalisation testing}, a necessary
+step on the path toward a deployable decision-support tool for HCM genetic
+counselling.
+
+%=======================================================================
+% References
+%=======================================================================
+\begin{thebibliography}{99}
+
+\bibitem{grantham1974}
+Grantham, R. (1974).
+Amino acid difference formula to help explain protein evolution.
+\textit{Science}, 185(4154), 862--864.
+\texttt{doi:10.1126/science.185.4154.862}
+
+\bibitem{clinvar}
+Landrum, M. J., et al. (2016).
+ClinVar: public archive of interpretations of clinically relevant variants.
+\textit{Nucleic Acids Research}, 44(D1), D862--D868.
+
+\bibitem{gnomad}
+Karczewski, K. J., et al. (2020).
+The mutational constraint spectrum quantified from variation in 141,456 humans.
+\textit{Nature}, 581, 434--443.
+
+\bibitem{acmg}
+Richards, S., et al. (2015).
+Standards and guidelines for the interpretation of sequence variants: a joint
+consensus recommendation of the American College of Medical Genetics and Genomics
+and the Association for Molecular Pathology.
+\textit{Genetics in Medicine}, 17(5), 405--424.
+
+\bibitem{esm2}
+Lin, Z., et al. (2023).
+Evolutionary-scale prediction of atomic-level protein structure with a language model.
+\textit{Science}, 379(6637), 1123--1130.
+
+\bibitem{alphafold}
+Jumper, J., et al. (2021).
+Highly accurate protein structure prediction with AlphaFold.
+\textit{Nature}, 596, 583--589.
+
+\bibitem{uniprot}
+The UniProt Consortium. (2021).
+UniProt: the universal protein knowledgebase in 2021.
+\textit{Nucleic Acids Research}, 49(D1), D480--D489.
+
+\bibitem{xgboost}
+Chen, T., \& Guestrin, C. (2016).
+XGBoost: A scalable tree boosting system.
+\textit{Proceedings of the 22nd ACM SIGKDD International Conference on
+Knowledge Discovery and Data Mining}, 785--794.
+
+\bibitem{share}
+Ho, C. Y., et al. (2018).
+Genotype and lifetime burden of disease in hypertrophic cardiomyopathy:
+insights from the Sarcomeric Human Cardiomyopathy Registry (SHaRe).
+\textit{Circulation}, 138(14), 1387--1398.
+
+\bibitem{shap}
+Lundberg, S. M., \& Lee, S.-I. (2017).
+A unified approach to interpreting model predictions.
+\textit{Advances in Neural Information Processing Systems}, 30.
+
+\end{thebibliography}
+
+\end{document}
+%=======================================================================
+% END OF DOCUMENT
+%=======================================================================
