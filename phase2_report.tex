@@ -70,11 +70,10 @@ Academic Year 2025--26
 
 \vspace{0.5cm}
 
-{\large\textbf{Health,Wellness\&Traditional Medicine}}
+{\large\textbf{Health,Wellness \& Traditional Medicine}}
 
 \vspace{1cm}
-
-{\Large\textbf{Phase II Progress Report}}\\[0.3cm]
+\\[0.3cm]
 {\LARGE\textbf{Unbiased Machine Learning for HCM: Utilizing Standing Variation to Reclassify Variants of Uncertain Significance
 }}
 
@@ -98,8 +97,8 @@ Academic Year 2025--26
 \centering\textbf{Faculty Mentor} &
 \centering\textbf{Chief Faculty Mentor}\tabularnewline
 \hline
-\centering Ashwin &
-\centering Dr. Sudarshan \tabularnewline
+\centering Ashwin Thammaiah K &
+\centering Dr. Sudarshan B.G \tabularnewline
 \centering Assistant Professor &
 \centering Professor \tabularnewline
 \hline
@@ -127,8 +126,8 @@ This is to certify that the project entitled
 
 \vspace{0.4cm}
 
-{\Large\textbf{Phase II Progress Report}}\\
-{\Large\textbf{HCM Variant Pathogenicity Classification}}
+
+{\Large\textbf{Unbiased Machine Learning for HCM: Utilizing Standing Variation to Reclassify Variants of Uncertain Significance}}
 
 \vspace{0.8cm}
 
@@ -157,13 +156,13 @@ during the academic year \textbf{2025--26}.
 
 \noindent
 \begin{minipage}{0.45\textwidth}
-\textbf{Dr. Ashwin}\\
+\textbf{Ashwin Thammaiah K}\\
 Faculty Mentor
 \end{minipage}
 \hfill
 \begin{minipage}{0.45\textwidth}
 \raggedleft
-\textbf{Dr.Sudarshan}\\
+\textbf{Dr.Sudarshan B.G}\\
 Chief Faculty Mentor
 \end{minipage}
 
@@ -180,39 +179,6 @@ Date: 28-04-2026 \hfill Place: Bengaluru
 \tableofcontents
 \newpage
 
-%=======================================================================
-% ABSTRACT
-%=======================================================================
-
-\begin{abstract}
-
-Hypertrophic Cardiomyopathy (HCM) is the most prevalent inherited cardiac disorder, affecting approximately 1 in 500 individuals worldwide. Despite rapid advances in clinical genomic sequencing, a substantial proportion of identified missense variants remain classified as \emph{Variants of Uncertain Significance (VUS)}, creating a diagnostic gap that impedes genetic counselling and family-cascade screening.
-
-This report presents the design, implementation, and comparative evaluation of a Phase II machine-learning framework for HCM variant pathogenicity prediction.
-
-A dataset of \textbf{1,954 clinically annotated missense variants} spanning nine sarcomeric genes was curated using ClinVar, ClinGen, gnomAD, ExAC, TOPMed, dbSNP, and UniProt.
-
-Three modelling streams were developed:
-
-\begin{itemize}
-\item Tuned XGBoost (Tabular Features)
-\item 1D-CNN (Sequence Features)
-\item Late-Fusion Hybrid Ensemble
-\end{itemize}
-
-All models were evaluated using 5-Fold Stratified Cross Validation.
-
-The Hybrid model achieved the best overall performance:
-
-\begin{itemize}
-\item ROC-AUC = \textbf{0.8222}
-\item MCC = \textbf{0.45}
-\item Balanced Accuracy = \textbf{0.753}
-\end{itemize}
-
-These findings validate the complementarity of structured biochemical features and learned sequence representations.
-
-\end{abstract}
 
 \newpage
 
@@ -329,6 +295,37 @@ consequence of the amino-acid substitution itself; (2)~the \emph{structural
 and functional context} of the mutation site within the protein; (3)~the
 \emph{evolutionary constraint} at that site; and (4)~a \emph{gene-identity}
 prior. Table~\ref{tab:features} summarises the four groups.
+\paragraph{Why the Grantham Score?}
+The Grantham score~\cite{grantham1974} quantifies the expected impact of an
+amino-acid substitution along three orthogonal biochemical axes: atomic
+composition, polarity, and molecular volume. A glycine-to-arginine
+substitution (Grantham $= 125$) introduces a large, positively charged side
+chain into a position previously occupied by the simplest amino acid,
+creating a severe steric and electrostatic mismatch. Empirically, the
+pathogenic variants in this dataset have a mean Grantham score of
+\textbf{79.78} compared to \textbf{60.85} for Benign variants
+(Table~\ref{tab:grantham}), confirming that radical substitutions are
+systematically enriched in pathogenic calls.
+\paragraph{Structural Annotation Features.}
+UniProt provides rich, expert-curated positional annotations for all nine
+HCM proteins. Binary indicators encode whether a variant falls within a
+known functional domain (e.g., the myosin motor domain of MYH7), a
+coiled-coil region, an alpha-helix, a beta-strand, a disordered linker, a
+PTM site, or a characterised functional site. These indicators encode
+knowledge that is invisible to sequence-only methods but is directly
+relevant to structural stability: a mutation at an ATP-binding site or a
+known phosphorylation residue carries an immediate functional implication,
+regardless of its Grantham score.
+
+\paragraph{Positional and Population Features.}
+The relative position of a variant within its protein (normalised to
+$[0,1]$) allows the model to learn, without explicit structural coordinates,
+that the myosin head domain of MYH7 is far more intolerant of substitution
+than the distal tail. The population allele frequency from gnomAD/ExAC/TOPMed
+provides evolutionary evidence: variants observed at frequencies above
+0.1\,\% in healthy control populations are extremely unlikely to be
+fully penetrant Mendelian disease alleles.
+
 
 \begin{table}[H]
 \centering
@@ -371,17 +368,6 @@ prior. Table~\ref{tab:features} summarises the four groups.
 \end{tabular}
 \end{table}
 
-\paragraph{Why the Grantham Score?}
-The Grantham score~\cite{grantham1974} quantifies the expected impact of an
-amino-acid substitution along three orthogonal biochemical axes: atomic
-composition, polarity, and molecular volume. A glycine-to-arginine
-substitution (Grantham $= 125$) introduces a large, positively charged side
-chain into a position previously occupied by the simplest amino acid,
-creating a severe steric and electrostatic mismatch. Empirically, the
-pathogenic variants in this dataset have a mean Grantham score of
-\textbf{79.78} compared to \textbf{60.85} for Benign variants
-(Table~\ref{tab:grantham}), confirming that radical substitutions are
-systematically enriched in pathogenic calls.
 
 \begin{table}[H]
 \centering
@@ -397,25 +383,7 @@ Benign     &   513 & 60.85 \\
 \end{tabular}
 \end{table}
 
-\paragraph{Structural Annotation Features.}
-UniProt provides rich, expert-curated positional annotations for all nine
-HCM proteins. Binary indicators encode whether a variant falls within a
-known functional domain (e.g., the myosin motor domain of MYH7), a
-coiled-coil region, an alpha-helix, a beta-strand, a disordered linker, a
-PTM site, or a characterised functional site. These indicators encode
-knowledge that is invisible to sequence-only methods but is directly
-relevant to structural stability: a mutation at an ATP-binding site or a
-known phosphorylation residue carries an immediate functional implication,
-regardless of its Grantham score.
 
-\paragraph{Positional and Population Features.}
-The relative position of a variant within its protein (normalised to
-$[0,1]$) allows the model to learn, without explicit structural coordinates,
-that the myosin head domain of MYH7 is far more intolerant of substitution
-than the distal tail. The population allele frequency from gnomAD/ExAC/TOPMed
-provides evolutionary evidence: variants observed at frequencies above
-0.1\,\% in healthy control populations are extremely unlikely to be
-fully penetrant Mendelian disease alleles.
 
 \subsection{Sliding-Window Sequence Extraction}
 \label{subsec:window}
@@ -440,12 +408,14 @@ alternate residue.
 \begin{figure}[H]
 \centering
 % Replace with actual sliding window schematic
-\fbox{\parbox{0.8\textwidth}{\centering\vspace{2cm}
-\textbf{[FIGURE PLACEHOLDER]}\\
-Sliding-window diagram: 11-residue window centred on mutation site,
-showing size (S) and charge (Q) encoding for each position.
-Zero-padding at protein boundaries is indicated in grey.
-\vspace{2cm}}}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{slider.png}
+    
+\end{figure}
+
+
 \caption{Schematic of the 11-residue sliding window sequence extraction.
 The mutated position is highlighted at the centre; size and charge
 encodings are shown for each flanking position.}
@@ -491,6 +461,16 @@ complementarity between modalities.
 The 1D-CNN was implemented in TensorFlow/Keras. Table~\ref{tab:cnn} details
 the exact layer configuration extracted from the trained model artefact.
 
+The choice of kernel size 3 in the convolutional layer is deliberate: a
+window of three consecutive residue encodings captures tripeptide-level
+physicochemical motifs—the smallest structural unit that encodes directional
+secondary-structure preference. Batch Normalisation after the convolutional
+layer stabilises the activation distribution across folds and prevents
+internal covariate shift in a dataset of this modest size.
+GlobalMaxPooling1D then extracts the single strongest activation across all
+11 window positions, providing a compact, position-invariant summary of the
+most informative local motif.
+
 \begin{table}[H]
 \centering
 \caption{Exact architecture of the 1D-CNN used in Branch 2. The model
@@ -521,15 +501,6 @@ the exact layer configuration extracted from the trained model artefact.
 \end{tabular}
 \end{table}
 
-The choice of kernel size 3 in the convolutional layer is deliberate: a
-window of three consecutive residue encodings captures tripeptide-level
-physicochemical motifs—the smallest structural unit that encodes directional
-secondary-structure preference. Batch Normalisation after the convolutional
-layer stabilises the activation distribution across folds and prevents
-internal covariate shift in a dataset of this modest size.
-GlobalMaxPooling1D then extracts the single strongest activation across all
-11 window positions, providing a compact, position-invariant summary of the
-most informative local motif.
 
 \subsection{Training Protocol and Class Imbalance Handling}
 \label{subsec:training}
@@ -550,6 +521,7 @@ training set.
 
 \paragraph{Class Imbalance Mitigation.}
 The Logistic Regression meta-learner used
+
 \texttt{class\_weight=`balanced'}, which applies inverse-frequency sample
 weights $(w_i = N / (2 \cdot n_c)$ for class $c)$, penalising
 misclassification of the minority Benign class more heavily. The XGBoost
@@ -676,15 +648,25 @@ vs.\ $73.2\,\%$).
 
 \begin{figure}[H]
 \centering
-\begin{subfigure}[b]{0.48\textwidth}
-  \includegraphics[width=\textwidth]{roc_comparison.png}
-  \caption{ROC curves for all three experimental branches.}
+\begin{subfigure}[b]{1.1\textwidth}
+  \includegraphics[width=\textwidth]{}
+\begin{figure}
+      \centering
+      \includegraphics[width=0.5\linewidth]{roc.png}
+   }
+  \end{figure}
+    \caption{ROC curves for all three experimental branches.}
   \label{fig:roc}
 \end{subfigure}
 \hfill
-\begin{subfigure}[b]{0.48\textwidth}
-  \includegraphics[width=\textwidth]{pr_comparison.png}
-  \caption{Precision-Recall curves. PR-AUC is more sensitive to class
+\begin{subfigure}[b]{1.1\textwidth}
+  \includegraphics[width=\textwidth]{}
+\begin{figure}
+      \centering
+      \includegraphics[width=0.5\linewidth]{pr.png}
+
+  \end{figure}
+    \caption{Precision-Recall curves. PR-AUC is more sensitive to class
            imbalance than ROC-AUC.}
   \label{fig:pr}
 \end{subfigure}
@@ -696,7 +678,7 @@ vs.\ $73.2\,\%$).
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.6\textwidth]{confusion_matrix.png}
+\includegraphics[width=0.6\textwidth]{cm.png}
 \caption{Confusion matrix of the Late-Fusion Hybrid Ensemble at the
          optimal threshold (0.5294). Colour intensity encodes cell count.}
 \label{fig:cm}
@@ -781,12 +763,16 @@ summarised in Table~\ref{tab:shap}.
 
 \begin{figure}[H]
 \centering
-\fbox{\parbox{0.8\textwidth}{\centering\vspace{2.5cm}
-\textbf{[FIGURE PLACEHOLDER]}\\
-SHAP summary beeswarm plot: feature-level contribution to XGBoost
-output across all 1,954 variants. Generate using
-\texttt{shap.summary\_plot(shap\_values, X\_tabular)}.
-\vspace{2.5cm}}}
+
+\textbf{}\\
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{hp.png}
+    
+    \label{fig:placeholder}
+\end{figure}
+
+
 \caption{SHAP summary plot for the Tuned XGBoost model. Each point
          represents one variant; colour encodes feature value (red=high,
          blue=low). The Grantham score and relative position dominate
@@ -823,13 +809,15 @@ neighbourhood.
 
 \begin{figure}[H]
 \centering
-\fbox{\parbox{0.8\textwidth}{\centering\vspace{2.5cm}
-\textbf{[FIGURE PLACEHOLDER]}\\
-Saliency map / integrated gradients heatmap: per-position importance
-in the 11-residue window, averaged over all correctly-classified
-Pathogenic variants. Positions $-1$ and $+1$ (immediately flanking the
-mutation site) are expected to show the highest saliency.
-\vspace{2.5cm}}}
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{hm.png}
+    
+    \label{fig:placeholder}
+\end{figure}
+\vspace{}}}
 \caption{Gradient-based saliency map for the CNN sequence branch,
          showing per-position contribution to the pathogenicity prediction
          averaged over all correctly classified Pathogenic variants.}
@@ -927,7 +915,13 @@ setting.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.65\textwidth]{calibration_plot.png}
+\includegraphics[width=1.1\textwidth]{}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{cp.png}
+    
+    \label{fig:placeholder}
+\end{figure}
 \caption{Probability calibration curve for the Hybrid Ensemble.
          Reliability of predicted pathogenicity probabilities across
          the full $[0,1]$ range is required for prospective clinical use.}
@@ -935,7 +929,9 @@ setting.
 \end{figure}
 
 \item[\textbf{Track B — ESM-2 Protein Language Model Embeddings:}]
-The 11-residue $(size, charge)$ encoding used in Phase~II, while
+\item[] 
+The 11-residue $(size, 
+charge)$ encoding used in Phase~II, while
 interpretable, is a coarse discretisation of the amino-acid alphabet.
 Meta AI's ESM-2 protein language model provides 480-dimensional or
 1,280-dimensional per-residue embeddings pre-trained on 250 million
