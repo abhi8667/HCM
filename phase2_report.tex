@@ -709,7 +709,6 @@ limitation:
   the CNN branch. For these edge-position variants, the model relies almost
   entirely on the tabular branch.
 \end{enumerate}
-
 The 115 false-positive Benign variants (incorrectly flagged as Pathogenic)
 are particularly costly in a clinical context. These variants carry
 relatively high Grantham scores or fall within annotated functional domains,
@@ -717,140 +716,7 @@ leading the tabular model to assign elevated pathogenicity probabilities that
 the CNN cannot fully offset.
 
 %=======================================================================
-\section{Interpretability and Biological Logic}
-\label{sec:interp}
-
-\subsection{XGBoost SHAP Feature Importance Hierarchy}
-\label{subsec:shap}
-
-SHAP (SHapley Additive exPlanations) analysis of the XGBoost model
-identifies a biologically coherent hierarchy of predictive features,
-summarised in Table~\ref{tab:shap}.
-
-\begin{table}[H]
-\centering
-\caption{Top-5 features by mean absolute SHAP value in the tuned XGBoost
-         model, with biological interpretation.}
-\label{tab:shap}
-\begin{tabular}{@{}clp{7cm}@{}}
-\toprule
-\textbf{Rank} & \textbf{Feature} & \textbf{Biological Rationale} \\
-\midrule
-1 & Grantham Score
-  & Composite measure of substitution radicality. Higher scores indicate
-    physicochemical incompatibility between reference and alternate residues,
-    predicting structural disruption. \\
-2 & Relative Position
-  & Mutations in the N-terminal motor domain of MYH7 ($\text{position} < 0.4$)
-    show systematically elevated pathogenicity; the model learns the protein's
-    structural topology implicitly. \\
-3 & Functional/PTM Site Indicator
-  & Variants disrupting ATP-binding sites, actin-binding interfaces, or
-    regulatory phosphorylation residues have near-certain pathogenicity,
-    regardless of Grantham score. \\
-4 & Domain Indicator
-  & Presence within a characterised structural domain (e.g., myosin-binding
-    domain of MYBPC3, EF-hand domain of TNNC1) elevates pathogenicity
-    probability due to reduced substitution tolerance in folded domain
-    interiors. \\
-5 & Population Frequency
-  & Strong \emph{negative} predictor: variants observed at allele frequency
-    $> 0.001$ in gnomAD are highly unlikely to be fully penetrant HCM alleles;
-    the model applies a large protective Benign weight to such variants. \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[H]
-\centering
-
-\textbf{}\\
-\begin{figure}
-    \centering
-    \includegraphics[width=0.5\linewidth]{hp.png}
-    
-    \label{fig:placeholder}
-\end{figure}
-
-
-\caption{SHAP summary plot for the Tuned XGBoost model. Each point
-         represents one variant; colour encodes feature value (red=high,
-         blue=low). The Grantham score and relative position dominate
-         positive SHAP contributions for Pathogenic calls.}
-\label{fig:shap}
-\end{figure}
-
-\subsection{CNN Sequence-Context Insights}
-\label{subsec:cnn_interp}
-
-The 1D-CNN's substantial improvement in Benign recall
-($71.9\,\%$ vs.\ $18.5\,\%$ for XGBoost) provides indirect evidence about
-the discriminative content of the 11-residue window. While explicit gradient
-saliency maps were not generated in the current training run, several
-inferences can be drawn from the model's performance profile.
-
-The convolutional filters (kernel size 3) operate across triplets of
-consecutive $(size, charge)$ encodings. Filters that activate maximally on
-patterns such as $(large{+}, large{+}, large{+})$ or $(neutral, neutral,
-negative{-})$ learn to detect regions of consistent physicochemical
-character — the fingerprint of structured, evolutionarily constrained
-secondary structures. A mutation inserted into such a context with a
-radically different physicochemical profile (as captured by the Grantham
-score and delta features in the auxiliary branch) creates a detectable
-\emph{neighbourhood mismatch}.
-
-The GlobalMaxPooling layer retains only the strongest such activation across
-all 11 positions, suggesting that the model's sequence-level decision is
-driven by the \emph{most anomalous tripeptide motif} in the window rather
-than by an average neighbourhood property. This aligns with the biological
-principle that protein instability from point mutations is often localised
-to a single critical interaction rather than distributed evenly across the
-neighbourhood.
-
-\begin{figure}[H]
-\centering
-
-
-\begin{figure}
-    \centering
-    \includegraphics[width=0.5\linewidth]{hm.png}
-    
-    \label{fig:placeholder}
-\end{figure}
-\vspace{}}}
-\caption{Gradient-based saliency map for the CNN sequence branch,
-         showing per-position contribution to the pathogenicity prediction
-         averaged over all correctly classified Pathogenic variants.}
-\label{fig:saliency}
-\end{figure}
-
-\subsection{Biological Conclusion: Model Mathematics Meets Cardiac Reality}
-\label{subsec:bio}
-
-The model's decision hierarchy—Grantham score, relative position, functional
-site disruption, domain membership, population frequency—mirrors the clinical
-geneticist's mental model for evaluating HCM variants. What the machine
-learning framework adds is a \emph{quantified, consistent, and scalable}
-instantiation of that model, immune to cognitive fatigue and applicable at
-genomic scale.
-
-The CNN's contribution is particularly compelling in biological terms. The
-sarcomeric proteins are not random polypeptides: they form precisely
-organised, mechanically stressed macromolecular assemblies in which every
-residue's identity within its local neighbourhood is under strong purifying
-selection. A point mutation that locally disrupts the charge pattern of an
-alpha-helix in the myosin S1 domain does not merely affect a single
-hydrogen bond; it propagates mechanical instability through the entire
-force-transmission apparatus, impairing crossbridge cycling and ultimately
-reducing cardiac contractile efficiency. The CNN's neighbourhood encoding
-captures this collective structural sensitivity in a mathematically compact
-representation that is inaccessible to feature-by-feature tabular analysis.
-
-The Grantham mean difference ($79.78$ versus $60.85$, a gap of
-approximately \textbf{19 Grantham units}) confirms that pathogenic HCM
-mutations involve systematically more radical amino-acid substitutions than
-Benign polymorphisms. This single observation validates the biological
-logic underlying the entire feature engineering strategy.
+\
 
 %=======================================================================
 \section{Discussion and Future Roadmap}
