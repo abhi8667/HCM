@@ -5,10 +5,11 @@ from sklearn.metrics import average_precision_score, roc_auc_score, f1_score, pr
 import joblib
 import torch
 import time
+import os
 
 try:
-    # from transformers import EsmTokenizer, EsmModel
-    HAS_TRANSFORMERS = False
+    from transformers import EsmTokenizer, EsmModel
+    HAS_TRANSFORMERS = True
 except ImportError:
     HAS_TRANSFORMERS = False
     print("Transformers not found, please install with `pip install transformers torch`")
@@ -128,7 +129,8 @@ def train_logo_validation(df, delta_embs, target_gene='MYBPC3'):
 if __name__ == "__main__":
     start_time = time.time()
     print("Loading data...")
-    df = pd.read_csv('HCM_labeled_final.csv')
+    data_path = 'data/HCM_labeled_final.csv' if os.path.exists('data/HCM_labeled_final.csv') else 'HCM_labeled_final.csv'
+    df = pd.read_csv(data_path)
     
     # Map label to 0/1 if it isn't already
     if df['label'].dtype == object:
@@ -138,16 +140,18 @@ if __name__ == "__main__":
     
     # We'll use a very small ESM-2 model (t6_8M) to make this script run reasonably fast on any machine
     # For publication, use "facebook/esm2_t33_650M_UR50D"
-    embs = extract_esm2_embeddings(df_clean, model_name="facebook/esm2_t6_8M_UR50D")
+    embs = extract_esm2_embeddings(df_clean, model_name="facebook/esm2_t33_650M_UR50D")
     
     # Save the embeddings so we don't have to recompute them later
-    np.save('esm2_delta_embeddings.npy', embs)
-    print("\nSaved ESM-2 embeddings to 'esm2_delta_embeddings.npy'")
+    emb_out = 'data/esm2_delta_embeddings.npy' if os.path.exists('data') else 'esm2_delta_embeddings.npy'
+    np.save(emb_out, embs)
+    print(f"\nSaved ESM-2 embeddings to '{emb_out}'")
     
     model = train_logo_validation(df_clean, embs, target_gene='TNNT2')
     
     # Save the baseline model
-    joblib.dump(model, 'hcm_logo_baseline_model.joblib')
-    print("Saved baseline model to 'hcm_logo_baseline_model.joblib'")
+    model_out = 'models/hcm_logo_baseline_model.joblib' if os.path.exists('models') else 'hcm_logo_baseline_model.joblib'
+    joblib.dump(model, model_out)
+    print(f"Saved baseline model to '{model_out}'")
     
     print(f"\nMonth 1 execution completed in {time.time() - start_time:.2f} seconds.")

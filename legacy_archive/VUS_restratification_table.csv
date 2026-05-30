@@ -1,0 +1,21 @@
+gene,mutation_str,Predicted_Pathogenicity,clin_sig,disease
+TNNI3,L93P,0.92,Variant of uncertain significance,Cardiomyopathy (CMYO)
+MYH7,R434S,0.91,Variant of uncertain significance,Cardiomyopathy (CMYO)
+MYH7,A326S,0.91,Variant of uncertain significance,Hypertrophic cardiomyopathy
+MYH7,I533N,0.91,Variant of uncertain significance,unknown
+MYH7,L166R,0.91,Variant of uncertain significance,Hypertrophic cardiomyopathy
+MYH7,R1260G,0.9,Variant of uncertain significance,Cardiomyopathy (CMYO)
+MYH7,T937S,0.9,Variant of uncertain significance,Hypertrophic cardiomyopathy
+MYH7,Y715C,0.9,Variant of uncertain significance,Hypertrophic cardiomyopathy
+MYH7,K551Q,0.9,Variant of uncertain significance,Cardiomyopathy (CMYO)
+TNNI3,D180G,0.89,Variant of uncertain significance,Cardiomyopathy (CMYO)
+MYH7,I524N,0.89,Variant of uncertain significance,unknown
+ACTC1,K361E,0.89,Variant of uncertain significance,Atrial septal defect 5 (ASD5)
+TPM1,T53I,0.88,Variant of uncertain significance,Hypertrophic cardiomyopathy
+MYH7,Y162D,0.88,Variant of uncertain significance,Hypertrophic cardiomyopathy
+MYH7,G231V,0.88,Variant of uncertain significance,unknown
+MYH7,K549N,0.88,Variant of uncertain significance,Cardiomyopathy (CMYO)
+MYH7,Y624D,0.88,Variant of uncertain significance,Hypertrophic cardiomyopathy
+MYH7,E875K,0.88,Variant of uncertain significance,Hypertrophic cardiomyopathy
+MYH7,D159H,0.88,Variant of uncertain significance,Primary dilated cardiomyopathy (DCM)
+TPM1,E145G,0.88,Variant of uncertain significance,unknown

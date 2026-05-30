@@ -1,0 +1,31 @@
+Latest model Information:-
+ 1. 1D-CNN Architecture (Exact)
+Inputs
+Sequence input: shape (11, 2) → local amino-acid window
+Auxiliary input: shape (29,) → biochemical + structural features
+Sequence Branch (1D-CNN)
+Conv1D(filters=32, kernel_size=3, padding='same', activation='relu')
+BatchNormalization
+GlobalMaxPooling1D
+Auxiliary Branch (Dense MLP)
+Dense(64, relu)
+Dropout(0.3)
+Dense(32, relu)
+Dropout(0.3)
+Fusion + Final Layers
+Concatenate (CNN output + MLP output)
+Dense(32, relu)
+Dropout(0.3)
+Dense(16, relu)
+Dense(1, sigmoid) 
+
+2. Meta-Learner (Stacking Layer)
+
+Model: Logistic Regression
+Input:
+[ P(XGBoost), P(CNN) ]
+Configuration:
+class_weight='balanced'
+Trained on OOF predictions (5-fold CV)
+
+MCC was not explicitly derived in the code so the appox value is 0.4512

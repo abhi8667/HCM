@@ -23,7 +23,7 @@ email@domain.com}
 \maketitle
 
 \begin{abstract}
-Hypertrophic Cardiomyopathy (HCM) is the most common inherited cardiomyopathy and a major cause of sudden cardiac death, heart failure, and life-long clinical surveillance in ostensibly healthy families. Although panel sequencing is now routine, variant interpretation remains the principal translational bottleneck: a substantial fraction of observed missense substitutions in sarcomeric genes remain Variants of Uncertain Significance (VUS), preventing confident cascade screening and delaying precision management. We address this bottleneck by developing a strictly zero-leakage pathogenicity framework that excludes all ACMG-derived clinical evidence and all inherited clinical meta-predictors from model inputs, thereby isolating intrinsic molecular signal from circular label logic. The method integrates differential evolutionary perturbation vectors from a frozen ESM-2 protein language model with structural and physicochemical descriptors in a two-tower neural network optimized with binary cross-entropy. To prevent homology-driven overestimation, we evaluate using Leave-One-Gene-Out (LOGO) validation, holding out an entire sarcomeric gene family member during training and testing exclusively on the unseen gene. On a stringent TNNT2 hold-out, the hybrid model attains an AUPRC of 0.8756 (95\% bootstrap CI: 0.7918--0.9422) with strong probabilistic reliability (Brier score: 0.2036). Ablation confirms complementary signal integration, with hybrid performance exceeding ESM-only and tabular-only variants. In \textit{in silico} mutagenesis analyses mapped to MYH7 motor-domain regions, predicted vulnerability concentrates at known biomechanical stress interfaces, including converter and actin-interacting surfaces, despite the absence of explicit 3D graph supervision. These findings support a principled shift from guideline recapitulation toward mechanism-grounded pathogenicity inference and provide a practical, calibrated prioritization engine for HCM VUS re-stratification.
+Hypertrophic Cardiomyopathy (HCM) is the most common inherited cardiomyopathy and a major cause of sudden cardiac death, heart failure, and life-long clinical surveillance in ostensibly healthy families. Although panel sequencing is now routine, variant interpretation remains the principal translational bottleneck: a substantial fraction of observed missense substitutions in sarcomeric genes remain Variants of Uncertain Significance (VUS), preventing confident cascade screening and delaying precision management. We address this bottleneck by developing a strictly zero-leakage pathogenicity framework that excludes all ACMG-derived clinical evidence and all inherited clinical meta-predictors from model inputs, thereby isolating intrinsic molecular signal from circular label logic. The method integrates differential evolutionary perturbation vectors from a frozen ESM-2 protein language model with structural and physicochemical descriptors in a two-tower neural network optimized with binary cross-entropy. To prevent homology-driven overestimation, we evaluate using Leave-One-Gene-Out (LOGO) validation, holding out an entire sarcomeric gene family member during training and testing exclusively on the unseen gene. On a stringent TNNT2 hold-out, the hybrid model attains an AUPRC of 0.9151 (95\% bootstrap CI: 0.8642--0.9649) with strong probabilistic reliability (Brier score: 0.1506). Ablation confirms that the 650M-parameter ESM representation provides immense standalone discriminative capacity, superseding explicit tabular heuristics. In \textit{in silico} mutagenesis analyses mapped to MYH7 and TNNT2 motor-domain regions, predicted vulnerability concentrates at known biomechanical stress interfaces, including converter and actin-interacting surfaces, despite the absence of explicit 3D graph supervision. These findings support a principled shift from guideline recapitulation toward mechanism-grounded pathogenicity inference and provide a practical, calibrated prioritization engine for HCM VUS re-stratification.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -75,7 +75,7 @@ In code, this differential embedding is computed directly as \texttt{delta = out
 The rationale for using $\Delta \mathbf{e}$ rather than $\mathbf{e}^{MUT}$ alone is mechanistic: subtractive encoding attenuates protein-specific background and emphasizes mutation-local perturbation in the context-conditioned latent space. This aligns with the biological problem, where pathogenicity is driven by deviation from tolerated sequence grammar rather than absolute sequence identity.
 
 \subsection{Two-Tower Neural Architecture}
-Let $\mathbf{x}_i^{tab} \in \mathbb{R}^{d_{tab}}$ denote tabular structural/physicochemical features and $\mathbf{x}_i^{esm}=\Delta\mathbf{e}_i \in \mathbb{R}^{320}$ denote ESM differential embeddings. The implemented architecture (\texttt{HybridHCMModel}) uses hidden width $h=64$ and consists of:
+Let $\mathbf{x}_i^{tab} \in \mathbb{R}^{d_{tab}}$ denote tabular structural/physicochemical features and $\mathbf{x}_i^{esm}=\Delta\mathbf{e}_i \in \mathbb{R}^{1280}$ denote ESM differential embeddings. The implemented architecture (\texttt{HybridHCMModel}) uses hidden width $h=64$ and consists of:
 
 \textbf{Tower 1 (Tabular):}
 \begin{equation}
@@ -84,7 +84,7 @@ Let $\mathbf{x}_i^{tab} \in \mathbb{R}^{d_{tab}}$ denote tabular structural/phys
 
 \textbf{Tower 2 (ESM):}
 \begin{equation}
-\mathbf{z}_i^{esm} = \mathrm{BN}\left(\mathrm{ReLU}(W_{esm}\mathbf{x}_i^{esm}+\mathbf{b}_{esm})\right), \quad W_{esm}\in\mathbb{R}^{h\times 320}.
+\mathbf{z}_i^{esm} = \mathrm{BN}\left(\mathrm{ReLU}(W_{esm}\mathbf{x}_i^{esm}+\mathbf{b}_{esm})\right), \quad W_{esm}\in\mathbb{R}^{h\times 1280}.
 \end{equation}
 
 \textbf{Fusion and Output:}
@@ -95,11 +95,11 @@ Let $\mathbf{x}_i^{tab} \in \mathbb{R}^{d_{tab}}$ denote tabular structural/phys
 \end{align}
 where $\sigma(\cdot)$ is the sigmoid function yielding pathogenicity probability $\hat{p}_i\in(0,1)$.
 
-The network is trained using binary cross-entropy (BCE):
+The network is trained using focal loss to address class imbalance:
 \begin{equation}
-\mathcal{L}_{\mathrm{BCE}} = -\frac{1}{N}\sum_{i=1}^{N}\left[y_i\log(\hat{p}_i)+(1-y_i)\log(1-\hat{p}_i)\right],
+\mathcal{L}_{\mathrm{Focal}} = -\frac{1}{N}\sum_{i=1}^{N}\left[\alpha(1-\hat{p}_i)^{\gamma}y_i\log(\hat{p}_i)+(1-\alpha)\hat{p}_i^{\gamma}(1-y_i)\log(1-\hat{p}_i)\right],
 \end{equation}
-optimized with Adam (learning rate $0.01$, 20 epochs) as implemented in \texttt{train\_nn}. Because output probabilities are generated directly through a sigmoid head with BCE minimization, calibration quality can be assessed natively via Brier score and reliability curves.
+optimized with Adam (learning rate $0.01$, 20 epochs) as implemented in \texttt{train\_nn}. Because output probabilities are generated directly through a sigmoid head, calibration quality can be assessed natively via Brier score, Expected Calibration Error (ECE), and reliability curves.
 
 \subsection{LOGO Validation for Homology-Safe Generalization}
 To eliminate gene-level leakage, we used Leave-One-Gene-Out evaluation. Formally, for gene set $\mathcal{G}$ and held-out gene $g^*\in\mathcal{G}$,
@@ -142,12 +142,12 @@ For interpretability beyond global feature importance, we generated an \textit{i
 
 \section{Results}
 \subsection{Primary LOGO Performance on Unseen TNNT2}
-Under strict TNNT2 hold-out LOGO evaluation, the two-tower model achieved a bootstrap mean AUPRC of \textbf{0.8756}, with 95\% CI \textbf{0.7918--0.9422}. This level of precision-recall discrimination under out-of-gene shift indicates that the model retains useful pathogenic signal despite complete exclusion of clinical/meta-clinical leakage features. In other words, performance is not contingent on recapitulating ACMG-derived label channels.
+Under strict TNNT2 hold-out LOGO evaluation, the two-tower model achieved a bootstrap mean AUPRC of \textbf{0.9151}, with 95\% CI \textbf{0.8642--0.9649}. This level of precision-recall discrimination under out-of-gene shift indicates that the model retains useful pathogenic signal despite complete exclusion of clinical/meta-clinical leakage features. In other words, performance is not contingent on recapitulating ACMG-derived label channels.
 
-Importantly, uncertainty bounds remain in a practically informative range. Even the lower confidence bound (0.7918) indicates substantial enrichment capacity in a class-imbalanced pathogenicity setting, supporting the robustness of learned representations rather than reliance on favorable random partitioning.
+Importantly, uncertainty bounds remain in a practically informative range. Even the lower confidence bound (0.8642) indicates substantial enrichment capacity in a class-imbalanced pathogenicity setting, supporting the robustness of learned representations rather than reliance on favorable random partitioning.
 
 \subsection{Calibration Quality}
-The held-out Brier score was \textbf{0.2036}. While there remains room for further calibration refinement, this value indicates meaningful probabilistic alignment given the strict evaluation design and absence of leak-prone features. The reliability curve shows approximate agreement between predicted probability bins and observed pathogenic fractions, suggesting the output can be interpreted as a prioritization confidence signal rather than only a ranking score.
+The held-out Brier score was \textbf{0.1506}. While there remains room for further calibration refinement, this value indicates meaningful probabilistic alignment given the strict evaluation design and absence of leak-prone features. The reliability curve shows approximate agreement between predicted probability bins and observed pathogenic fractions, suggesting the output can be interpreted as a prioritization confidence signal rather than only a ranking score.
 
 \begin{figure}[h]
 \centering
@@ -157,13 +157,13 @@ The held-out Brier score was \textbf{0.2036}. While there remains room for furth
 \end{figure}
 
 \subsection{Ablation Demonstrates Cross-Modal Complementarity}
-Ablation analysis yielded the following AUPRC values: full hybrid \textbf{0.8756}; tabular-only \textbf{0.8717}; ESM-only \textbf{0.7963}. Two observations are notable.
+Ablation analysis yielded the following AUPRC values: full hybrid \textbf{0.9151}; tabular-only \textbf{0.8696}; ESM-only \textbf{0.9404}. Two observations are notable.
 
-First, the ESM-only branch, while informative, underperforms the fused model by a substantial margin. This suggests that global evolutionary perturbation vectors alone do not fully encode the local structural context required for clinically relevant discrimination in sarcomeric proteins. Evolutionary language models capture broad sequence regularities, but pathogenicity in contractile proteins is often conditioned by site-specific mechanical roles, charge environment, and domain architecture that are only partially represented in sequence-derived embeddings.
+First, the ESM-only branch outperforms both the tabular and fused models. This demonstrates the immense representational power of the 650M-parameter evolutionary language model, which successfully encodes the complex local and global structural context required for clinically relevant discrimination in sarcomeric proteins without any explicitly engineered biophysical features.
 
-Second, tabular-only performance is strong but still below hybrid fusion. The incremental improvement from adding ESM differentials indicates that language-model embeddings provide orthogonal information not fully recoverable from handcrafted descriptors. Mechanistically, this is plausible: tabular features encode explicit local properties (e.g., physicochemical change categories), whereas ESM differentials encode distributed context effects learned from large-scale evolutionary co-occurrence patterns.
+Second, tabular-only performance remains remarkably strong (AUPRC 0.8696) as a standalone baseline. However, its integration into the hybrid model (AUPRC 0.9151) actually constrained the raw predictive power of the pure ESM-2 embeddings. This suggests that while carefully handcrafted structural and physicochemical descriptors capture dominant pathogenic signals, the high-dimensional latent space of the 650M language model provides a superset of that information, and naive concatenation-based fusion may dilute the optimal decision boundary.
 
-Taken together, the fusion model likely benefits from combining \emph{global evolutionary constraints} (``what substitutions are surprising in context'') with \emph{local physicochemical constraints} (``what substitutions disrupt this region's known mechanics''). In biochemical terms, pathogenicity frequently emerges when both signals align---for example, a substitution that is evolutionarily disfavored and simultaneously perturbs charge/size in a mechanically loaded motif.
+Taken together, the findings confirm that large-scale evolutionary language models can independently decode the pathogenic molecular grammar (``what substitutions are surprising in context'') better than engineered physical heuristics.
 
 \subsection{In Silico Mutagenesis Landscape and Structural Interpretation}
 The ISM heatmap provides residue-level interpretability by estimating susceptibility across amino-acid substitutions and positions in an MYH7 segment. High-risk stripes and substitution-specific hotspots reveal that predicted vulnerability is not uniformly distributed; rather, it concentrates in sequence contexts known to govern force transduction and actomyosin interaction.
@@ -172,9 +172,16 @@ When mapped onto established myosin functional topology, elevated sensitivity is
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.45\textwidth]{../figures/ism_landscape_m2.png}
+\includegraphics[width=0.45\textwidth]{../figures/ism_landscape_m2_MYH7.png}
 \caption{In silico mutagenesis heatmap across an MYH7 sequence segment. Warmer values indicate increased predicted pathogenicity for specific residue substitutions at each position.}
 \label{fig:ism}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.45\textwidth]{../figures/ism_landscape_m2_TNNT2.png}
+\caption{In silico mutagenesis heatmap across a TNNT2 sequence segment, demonstrating generalized prediction capacity across disparate sarcomeric topologies.}
+\label{fig:ism_tnnt2}
 \end{figure}
 
 Although ISM does not by itself prove causal molecular mechanism, it narrows hypotheses to position-substitution pairs likely to perturb sarcomeric function. This enables focused downstream assays (e.g., ATPase kinetics, motility, or cellular contractility) rather than broad undirected screening.
@@ -240,7 +247,7 @@ Several extensions are natural. A nested LOGO-plus-temporal validation design co
 Most importantly, prospective laboratory validation of top-ranked VUS candidates should be treated as a first-class objective. A model that reliably enriches true pathogenic variants in assay queues can produce disproportionate clinical value even if not used directly for final classification.
 
 \section{Conclusion}
-We present a publication-ready zero-leakage framework for HCM missense pathogenicity prediction that combines mutation-centric ESM-2 differential embeddings with structural/physicochemical descriptors in a transparent two-tower neural architecture. Under homology-safe LOGO evaluation on unseen TNNT2, the model achieves strong discrimination (AUPRC 0.8756, 95\% CI 0.7918--0.9422) and clinically relevant calibration (Brier 0.2036). Ablation and ISM analyses indicate that performance gains arise from biologically coherent fusion of global evolutionary and local biophysical information. Beyond benchmark metrics, the framework provides a practical route to leakage-resistant VUS prioritization and offers interpretable hypotheses aligned with sarcomeric biomechanics. This work supports a methodological shift in inherited-cardiomyopathy AI: from recapitulating clinical guideline artifacts toward learning intrinsic molecular determinants of disease.
+We present a publication-ready zero-leakage framework for HCM missense pathogenicity prediction that combines mutation-centric ESM-2 differential embeddings with structural/physicochemical descriptors in a transparent two-tower neural architecture. Under homology-safe LOGO evaluation on unseen TNNT2, the model achieves strong discrimination (AUPRC 0.9151, 95\% CI 0.8642--0.9649) and clinically relevant calibration (Brier 0.1506). Ablation and ISM analyses indicate that performance is primarily driven by the immense representational capacity of the 650M-parameter global evolutionary language model, which encapsulates local biophysical constraints natively. Beyond benchmark metrics, the framework provides a practical route to leakage-resistant VUS prioritization and offers interpretable hypotheses aligned with sarcomeric biomechanics. This work supports a methodological shift in inherited-cardiomyopathy AI: from recapitulating clinical guideline artifacts toward learning intrinsic molecular determinants of disease.
 
 \section*{Data Availability}
 The codebase, processed datasets, and model artifacts required to reproduce the analyses are available in the associated repository. All reported methodological details are directly aligned with the provided implementation scripts.
