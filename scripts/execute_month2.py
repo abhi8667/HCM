@@ -6,6 +6,9 @@ import torch.optim as optim
 from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
 from sklearn.calibration import calibration_curve
 from sklearn.utils import resample
+from sklearn.ensemble import RandomForestClassifier
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 import time
@@ -61,23 +64,27 @@ def get_grantham(aa1, aa2):
     if i >= j: return grantham_raw[i][j]
     else: return grantham_raw[j][i]
 
-# --- Week 5: Two-Tower Hybrid Model ---
+# --- Week 5: Two-Tower Hybrid Model (Finalized Weighted BCE Version) ---
 class HybridHCMModel(nn.Module):
-    def __init__(self, tabular_dim, esm_dim=1280, hidden_dim=64):
+    def __init__(self, tabular_dim, esm_dim=1280, hidden_dim=32):
         super().__init__()
         self.tower_tab = nn.Sequential(
             nn.Linear(tabular_dim, hidden_dim),
             nn.ReLU(),
-            nn.BatchNorm1d(hidden_dim)
+            nn.BatchNorm1d(hidden_dim),
+            nn.Dropout(0.3)
         )
         self.tower_esm = nn.Sequential(
             nn.Linear(esm_dim, hidden_dim),
             nn.ReLU(),
-            nn.BatchNorm1d(hidden_dim)
+            nn.BatchNorm1d(hidden_dim),
+            nn.Dropout(0.3)
         )
         self.fusion = nn.Sequential(
             nn.Linear(hidden_dim * 2, hidden_dim),
             nn.ReLU(),
+            nn.BatchNorm1d(hidden_dim),
+            nn.Dropout(0.3),
             nn.Linear(hidden_dim, 1),
             nn.Sigmoid()
         )
@@ -88,32 +95,28 @@ class HybridHCMModel(nn.Module):
         fused = torch.cat([out_tab, out_esm], dim=1)
         return self.fusion(fused)
 
-class FocalLoss(nn.Module):
-    def __init__(self, alpha=0.25, gamma=2):
-        super().__init__()
-        self.alpha = alpha
-        self.gamma = gamma
-
-    def forward(self, inputs, targets):
-        p_t = torch.where(targets == 1, inputs, 1 - inputs)
-        alpha_t = torch.where(targets == 1, self.alpha, 1 - self.alpha)
-        epsilon = 1e-8
-        loss = -alpha_t * (1 - p_t) ** self.gamma * torch.log(p_t + epsilon)
-        return loss.mean()
-
-def train_nn(model, X_tab_train, X_esm_train, y_train, epochs=20, lr=0.01):
-    criterion = FocalLoss()
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+def train_nn(model, X_tab_tr, X_esm_tr, y_tr, epochs=40, lr=0.003):
+    num_class_1 = np.sum(y_tr == 1)
+    num_class_0 = np.sum(y_tr == 0)
+    total = len(y_tr)
+    weight_1 = total / (2.0 * num_class_1)
+    weight_0 = total / (2.0 * num_class_0)
+    
+    sample_weights = np.where(y_tr == 1, weight_1, weight_0)
+    sample_weights_t = torch.FloatTensor(sample_weights).unsqueeze(1)
+    
+    criterion = nn.BCELoss(weight=sample_weights_t)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+    
+    tab_t_tr = torch.FloatTensor(X_tab_tr)
+    esm_t_tr = torch.FloatTensor(X_esm_tr)
+    y_t_tr = torch.FloatTensor(y_tr).unsqueeze(1)
+    
     model.train()
-    
-    tab_t = torch.FloatTensor(X_tab_train)
-    esm_t = torch.FloatTensor(X_esm_train)
-    y_t = torch.FloatTensor(y_train).unsqueeze(1)
-    
     for ep in range(epochs):
         optimizer.zero_grad()
-        out = model(tab_t, esm_t)
-        loss = criterion(out, y_t)
+        out = model(tab_t_tr, esm_t_tr)
+        loss = criterion(out, y_t_tr)
         loss.backward()
         optimizer.step()
     return model
@@ -123,6 +126,7 @@ def predict_nn(model, X_tab, X_esm):
     with torch.no_grad():
         out = model(torch.FloatTensor(X_tab), torch.FloatTensor(X_esm))
     return out.numpy().flatten()
+
 
 # --- Load Data from Month 1 ---
 print("Loading data and splits from Month 1...")
@@ -171,47 +175,67 @@ for target_gene in target_genes:
     
     hybrid_model = HybridHCMModel(tabular_dim=X_tab.shape[1], esm_dim=X_esm.shape[1])
     hybrid_model = train_nn(hybrid_model, X_tab_tr, X_esm_tr, y_tr)
-    y_pred_proba = predict_nn(hybrid_model, X_tab_te, X_esm_te)
     
-    bootstrapped_auprc = []
-    for i in range(n_bootstraps):
-        indices = resample(np.arange(len(y_te)), replace=True)
-        if len(np.unique(y_te[indices])) < 2:
-            continue
-        score = average_precision_score(y_te[indices], y_pred_proba[indices])
-        bootstrapped_auprc.append(score)
+    # Platt Scaling calibration for Two-Tower
+    y_prob_tr_uncal = predict_nn(hybrid_model, X_tab_tr, X_esm_tr)
+    y_prob_te_uncal = predict_nn(hybrid_model, X_tab_te, X_esm_te)
+    y_prob_tr_uncal = np.clip(y_prob_tr_uncal, 1e-7, 1-1e-7)
+    y_prob_te_uncal = np.clip(y_prob_te_uncal, 1e-7, 1-1e-7)
     
-    mean_auprc = np.mean(bootstrapped_auprc)
-    lower_ci = np.percentile(bootstrapped_auprc, 2.5)
-    upper_ci = np.percentile(bootstrapped_auprc, 97.5)
+    from sklearn.linear_model import LogisticRegression
+    calibrator = LogisticRegression(C=999, solver='lbfgs')
+    calibrator.fit(y_prob_tr_uncal.reshape(-1, 1), y_tr)
     
-    brier = brier_score_loss(y_te, y_pred_proba)
-    prob_true, prob_pred = calibration_curve(y_te, y_pred_proba, n_bins=10)
+    y_pred_proba_tt = calibrator.predict_proba(y_prob_te_uncal.reshape(-1, 1))[:, 1]
     
-    bins = np.linspace(0, 1, 10 + 1)
-    binids = np.digitize(y_pred_proba, bins) - 1
-    bin_counts = np.bincount(binids, minlength=10)
-    non_empty = bin_counts > 0
-    ece = np.sum(np.abs(prob_true - prob_pred) * bin_counts[non_empty]) / len(y_pred_proba)
+    # Random Forest Model
+    X_rf_tr = np.hstack([X_tab_tr, X_esm_tr])
+    X_rf_te = np.hstack([X_tab_te, X_esm_te])
+    rf = RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42, n_jobs=-1, class_weight='balanced')
+    rf.fit(X_rf_tr, y_tr)
+    y_pred_proba_rf = rf.predict_proba(X_rf_te)[:, 1]
     
-    results.append({
-        'Gene': target_gene,
-        'AUPRC': f"{mean_auprc:.4f}",
-        '95% CI': f"[{lower_ci:.4f}, {upper_ci:.4f}]",
-        'Brier': f"{brier:.4f}",
-        'ECE': f"{ece:.4f}"
-    })
-
-    if target_gene == 'TNNT2':
-        plt.figure(figsize=(6, 6))
-        plt.plot(prob_pred, prob_true, marker='o', label='Hybrid Model (Focal Loss)')
-        plt.plot([0, 1], [0, 1], linestyle='--', label='Perfect Calibration')
-        plt.title('Reliability Diagram (TNNT2 LOGO)')
-        plt.xlabel('Mean predicted probability')
-        plt.ylabel('Fraction of positives')
-        plt.legend()
-        plt.savefig(f"{fig_prefix}calibration_plot_m2.png")
-        plt.close()
+    for model_name, y_pred_proba in [('Two-Tower Hybrid', y_pred_proba_tt), ('Baseline RF', y_pred_proba_rf)]:
+        bootstrapped_auprc = []
+        for i in range(n_bootstraps):
+            indices = resample(np.arange(len(y_te)), replace=True)
+            if len(np.unique(y_te[indices])) < 2:
+                continue
+            score = average_precision_score(y_te[indices], y_pred_proba[indices])
+            bootstrapped_auprc.append(score)
+        
+        mean_auprc = np.mean(bootstrapped_auprc) if bootstrapped_auprc else 0
+        lower_ci = np.percentile(bootstrapped_auprc, 2.5) if bootstrapped_auprc else 0
+        upper_ci = np.percentile(bootstrapped_auprc, 97.5) if bootstrapped_auprc else 0
+        
+        brier = brier_score_loss(y_te, y_pred_proba)
+        prob_true, prob_pred = calibration_curve(y_te, y_pred_proba, n_bins=10)
+        
+        bins = np.linspace(0, 1, 10 + 1)
+        binids = np.digitize(y_pred_proba, bins) - 1
+        bin_counts = np.bincount(binids, minlength=10)
+        non_empty = bin_counts > 0
+        ece = np.sum(np.abs(prob_true - prob_pred) * bin_counts[non_empty]) / len(y_pred_proba)
+        
+        results.append({
+            'Gene': target_gene,
+            'Model': model_name,
+            'AUPRC': f"{mean_auprc:.4f}",
+            '95% CI': f"[{lower_ci:.4f}, {upper_ci:.4f}]",
+            'Brier': f"{brier:.4f}",
+            'ECE': f"{ece:.4f}"
+        })
+     
+        if target_gene == 'TNNT2':
+            plt.figure(figsize=(6, 6))
+            plt.plot(prob_pred, prob_true, marker='o', label=model_name)
+            plt.plot([0, 1], [0, 1], linestyle='--', label='Perfect Calibration')
+            plt.title(f'Reliability Diagram (TNNT2 LOGO) - {model_name}')
+            plt.xlabel('Mean predicted probability')
+            plt.ylabel('Fraction of positives')
+            plt.legend()
+            plt.savefig(f"{fig_prefix}calibration_plot_m2_{model_name.replace(' ', '_')}.png")
+            plt.close()
 
 # Report Results Table
 print("\n--- LOGO Validation Results ---")
@@ -229,12 +253,28 @@ y_tr, y_te = y[train_idx], y[test_idx]
 
 model_no_esm = HybridHCMModel(tabular_dim=X_tab.shape[1], esm_dim=X_esm.shape[1])
 model_no_esm = train_nn(model_no_esm, X_tab_tr, np.zeros_like(X_esm_tr), y_tr)
-pred_no_esm = predict_nn(model_no_esm, X_tab_te, np.zeros_like(X_esm_te))
+
+y_prob_tr_uncal_no_esm = predict_nn(model_no_esm, X_tab_tr, np.zeros_like(X_esm_tr))
+y_prob_te_uncal_no_esm = predict_nn(model_no_esm, X_tab_te, np.zeros_like(X_esm_te))
+y_prob_tr_uncal_no_esm = np.clip(y_prob_tr_uncal_no_esm, 1e-7, 1-1e-7)
+y_prob_te_uncal_no_esm = np.clip(y_prob_te_uncal_no_esm, 1e-7, 1-1e-7)
+
+cal_no_esm = LogisticRegression(C=999, solver='lbfgs')
+cal_no_esm.fit(y_prob_tr_uncal_no_esm.reshape(-1, 1), y_tr)
+pred_no_esm = cal_no_esm.predict_proba(y_prob_te_uncal_no_esm.reshape(-1, 1))[:, 1]
 auprc_no_esm = average_precision_score(y_te, pred_no_esm)
 
 model_no_tab = HybridHCMModel(tabular_dim=X_tab.shape[1], esm_dim=X_esm.shape[1])
 model_no_tab = train_nn(model_no_tab, np.zeros_like(X_tab_tr), X_esm_tr, y_tr)
-pred_no_tab = predict_nn(model_no_tab, np.zeros_like(X_tab_te), X_esm_te)
+
+y_prob_tr_uncal_no_tab = predict_nn(model_no_tab, np.zeros_like(X_tab_tr), X_esm_tr)
+y_prob_te_uncal_no_tab = predict_nn(model_no_tab, np.zeros_like(X_tab_te), X_esm_te)
+y_prob_tr_uncal_no_tab = np.clip(y_prob_tr_uncal_no_tab, 1e-7, 1-1e-7)
+y_prob_te_uncal_no_tab = np.clip(y_prob_te_uncal_no_tab, 1e-7, 1-1e-7)
+
+cal_no_tab = LogisticRegression(C=999, solver='lbfgs')
+cal_no_tab.fit(y_prob_tr_uncal_no_tab.reshape(-1, 1), y_tr)
+pred_no_tab = cal_no_tab.predict_proba(y_prob_te_uncal_no_tab.reshape(-1, 1))[:, 1]
 auprc_no_tab = average_precision_score(y_te, pred_no_tab)
 
 print(f"Full Hybrid AUPRC (TNNT2): {df_results[df_results['Gene']=='TNNT2']['AUPRC'].values[0]}")
@@ -245,6 +285,16 @@ print(f"Ablation (No Tabular) AUPRC: {auprc_no_tab:.4f}")
 print("\nTraining final hybrid model on full dataset for ISM inference...")
 final_model = HybridHCMModel(tabular_dim=X_tab.shape[1], esm_dim=X_esm.shape[1])
 final_model = train_nn(final_model, X_tab, X_esm, y)
+
+# Fit Platt Scaling on full dataset training predictions
+final_prob_tr_uncal = predict_nn(final_model, X_tab, X_esm)
+final_prob_tr_uncal = np.clip(final_prob_tr_uncal, 1e-7, 1-1e-7)
+cal_final = LogisticRegression(C=999, solver='lbfgs')
+cal_final.fit(final_prob_tr_uncal.reshape(-1, 1), y)
+
+print("Training final RF model on full dataset for ISM inference...")
+final_rf = RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42, n_jobs=-1, class_weight='balanced')
+final_rf.fit(np.hstack([X_tab, X_esm]), y)
 
 # 4. REAL In Silico Mutagenesis (ISM) Landscape
 print("\n--- Week 8: Real In Silico Mutagenesis (ISM) Landscape ---")
@@ -269,7 +319,8 @@ def generate_real_ism(gene_name, num_positions=20):
     print(f"Computing real ISM predictions for {gene_name}...")
     gene_df = df_clean[df_clean['gene'] == gene_name].drop_duplicates(subset=['position']).sort_values('position').head(num_positions)
     
-    heatmap_matrix = np.zeros((20, len(gene_df)))
+    heatmap_matrix_tt = np.zeros((20, len(gene_df)))
+    heatmap_matrix_rf = np.zeros((20, len(gene_df)))
     positions = gene_df['position'].tolist()
     
     for c_idx, (_, row) in enumerate(gene_df.iterrows()):
@@ -301,18 +352,38 @@ def generate_real_ism(gene_name, num_positions=20):
             x_tab_tensor = torch.FloatTensor(mut_tab.values.astype(float)).unsqueeze(0)
             x_esm_tensor = torch.FloatTensor(delta_esm)
             
-            prob = predict_nn(final_model, x_tab_tensor, x_esm_tensor)[0]
-            heatmap_matrix[r_idx, c_idx] = prob
+            # Two-Tower Prediction
+            uncal_prob = predict_nn(final_model, x_tab_tensor, x_esm_tensor)[0]
+            uncal_prob = np.clip(uncal_prob, 1e-7, 1-1e-7)
+            prob_tt = cal_final.predict_proba(np.array([[uncal_prob]]))[:, 1][0]
+            heatmap_matrix_tt[r_idx, c_idx] = prob_tt
             
+            # RF Prediction
+            rf_input = np.hstack([mut_tab.values.astype(float).reshape(1, -1), delta_esm])
+            prob_rf = final_rf.predict_proba(rf_input)[:, 1][0]
+            heatmap_matrix_rf[r_idx, c_idx] = prob_rf
+            
+    # Plot Two-Tower
     plt.figure(figsize=(12, 6))
-    sns.heatmap(heatmap_matrix, yticklabels=aas, xticklabels=positions, cmap="coolwarm", annot=False)
-    plt.title(f'Real In Silico Mutagenesis Landscape ({gene_name})')
+    sns.heatmap(heatmap_matrix_tt, yticklabels=aas, xticklabels=positions, cmap="coolwarm", annot=False)
+    plt.title(f'Real In Silico Mutagenesis Landscape (Two-Tower BCE) ({gene_name})')
     plt.xlabel('Sequence Position')
     plt.ylabel('Mutated Amino Acid')
-    out_file = f"{fig_prefix}ism_landscape_m2_{gene_name}.png"
-    plt.savefig(out_file)
+    out_file_tt = f"{fig_prefix}ism_landscape_m2_TwoTower_{gene_name}.png"
+    plt.savefig(out_file_tt)
     plt.close()
-    print(f"Saved {gene_name} real ISM heatmap to '{out_file}'")
+    
+    # Plot RF
+    plt.figure(figsize=(12, 6))
+    sns.heatmap(heatmap_matrix_rf, yticklabels=aas, xticklabels=positions, cmap="coolwarm", annot=False)
+    plt.title(f'Real In Silico Mutagenesis Landscape (Baseline RF) ({gene_name})')
+    plt.xlabel('Sequence Position')
+    plt.ylabel('Mutated Amino Acid')
+    out_file_rf = f"{fig_prefix}ism_landscape_m2_RF_{gene_name}.png"
+    plt.savefig(out_file_rf)
+    plt.close()
+    
+    print(f"Saved {gene_name} real ISM heatmaps for both models.")
 
 for target_gene in target_genes:
     generate_real_ism(target_gene)
