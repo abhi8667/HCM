@@ -1,59 +1,5 @@
 # Deciphering the Molecular Grammar of Hypertrophic Cardiomyopathy (HCM)
-<<<<<<< HEAD
 
-This repository contains the implementation and assets for the research project:
-**"Deciphering the Molecular Grammar of Hypertrophic Cardiomyopathy: A Zero-Leakage Language Modeling Approach to Sarcomeric Pathogenicity."**
-
-It provides an end-to-end, leakage-controlled pipeline for HCM missense variant pathogenicity modeling using differential ESM-2 embeddings, structural/physicochemical features, and a two-tower neural architecture under Leave-One-Gene-Out (LOGO) validation.
-
-## Research Objective
-
-Hypertrophic Cardiomyopathy (HCM) variant interpretation remains limited by high VUS burden and evaluation leakage in many prediction workflows. This project is designed to test whether pathogenicity can be inferred from intrinsic molecular constraints without relying on ACMG-overlapping or clinically circular evidence channels.
-
-## Methodological Principles (Aligned with the Manuscript)
-
-- **Zero-leakage feature policy:** leakage-prone clinical fields are removed before modeling (`pop_freq`, `disease`, `sources`, `genomic_loc`, `review_status`, `clin_sig`).
-- **Homology-safe validation:** **LOGO** split design (held-out gene evaluation).
-- **Mutation-centric representation:** differential ESM-2 embedding vectors (`mutant - wild-type`).
-- **Hybrid modeling:** tabular structural/biophysical tower + ESM embedding tower.
-- **Clinical usability focus:** calibration-aware scoring and VUS re-stratification support.
-
-## Headline Results Reported in the Paper
-
-Under strict TNNT2 LOGO hold-out evaluation, the manuscript reports:
-
-- **AUPRC:** `0.9151` (95% bootstrap CI: `0.8642–0.9649`)
-- **Brier score:** `0.1506`
-- **VUS prioritization output:** `4,523` unresolved variants scored for downstream triage
-
-For full context and interpretation, see:
-- `paper/hcm_paper_manuscript.tex`
-
-## Repository Structure
-
-- `data/`
-  - Core datasets (`HCM_labeled_final.csv`, `HCM_all_variants_v2.csv`)
-  - Cached embeddings (`esm2_delta_embeddings.npy`)
-- `scripts/`
-  - `execute_month1.py`: cleaning, de-leaking, embedding extraction, baseline model
-  - `execute_month2.py`: two-tower training, LOGO evaluation, calibration, ablations, ISM outputs
-  - `execute_month3.py`: final training and VUS re-stratification
-  - Additional comparison/benchmark scripts
-- `models/`
-  - Baseline and final model artifacts
-- `results/`
-  - LOGO metrics and VUS ranking tables
-- `figures/`
-  - Calibration and ISM visual outputs
-- `paper/`
-  - Manuscript sources and references
-
-## Reproducibility Workflow
-
-### 1) Environment
-
-Use Python 3.10 and install required dependencies:
-=======
 ### *A Zero-Leakage Protein Language Modeling Approach to Sarcomeric Pathogenicity*
 
 This repository contains the end-to-end variant interpretation pipeline, dataset curation tools, model weights, and publication assets for our research on predicting the clinical pathogenicity of missense mutations in sarcomeric genes associated with Hypertrophic Cardiomyopathy (HCM).
@@ -67,7 +13,6 @@ This repository contains the end-to-end variant interpretation pipeline, dataset
 
 ### What the Paper is About
 Interpretation of genetic variants remains the primary translation bottleneck in cardiology: a vast fraction of observed missense mutations in sarcomeric genes are classified as **Variants of Uncertain Significance (VUS)**, stalling cascade screening in families. 
->>>>>>> 689af50 (docs & results: Overhaul manuscript and README, add external benchmarking metrics and plots)
 
 This paper introduces a deep-learning two-tower late-fusion framework that evaluates variants solely on **intrinsic biophysical and evolutionary constraints** without relying on ACMG-derived clinical heuristics.
 
