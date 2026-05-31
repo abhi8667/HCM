@@ -59,7 +59,7 @@ pip install pandas numpy scikit-learn torch transformers matplotlib seaborn jobl
 
 ### 2) Execute the Pipeline
 
-From repository root (`/tmp/workspace/abhi8667/HCM`):
+From the repository root:
 
 ```bash
 python scripts/execute_month1.py
