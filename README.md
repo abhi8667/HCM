@@ -42,6 +42,9 @@ This paper introduces a deep-learning two-tower late-fusion framework that evalu
 │   ├── execute_month1.py       # Data purging, feature de-leaking, baseline models
 │   ├── execute_month2.py       # PyTorch two-tower training, LOGO evaluation, calibration, ISM
 │   └── execute_month3.py       # VUS re-stratification inference & ranking
+├── external_validation/        # External model comparison and benchmark scripts
+│   ├── evaluate_external_models.py # Compiles EVE & AlphaMissense results
+│   └── compare_models.py       # Compares Two-Tower against traditional ML baselines
 ├── models/                     # Saved model checkpoints and baseline configurations
 ├── results/                    # Exported metrics and prioritizations
 │   ├── VUS_restratification_table.csv # Prioritized triage guide
