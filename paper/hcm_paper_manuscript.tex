@@ -7,6 +7,7 @@
 \usepackage{xcolor}
 \usepackage{booktabs}
 \usepackage{hyperref}
+\usepackage[caption=false,font=footnotesize]{subfig}
 
 \begin{document}
 
@@ -147,13 +148,15 @@ Under strict TNNT2 hold-out LOGO evaluation, the two-tower model achieved a boot
 Importantly, uncertainty bounds remain in a practically informative range. Even the lower confidence bound (0.8642) indicates substantial enrichment capacity in a class-imbalanced pathogenicity setting, supporting the robustness of learned representations rather than reliance on favorable random partitioning.
 
 \subsection{Calibration Quality}
-The held-out Brier score was \textbf{0.1506}. While there remains room for further calibration refinement, this value indicates meaningful probabilistic alignment given the strict evaluation design and absence of leak-prone features. The reliability curve shows approximate agreement between predicted probability bins and observed pathogenic fractions, suggesting the output can be interpreted as a prioritization confidence signal rather than only a ranking score.
+The held-out Brier score was \textbf{0.1506}. While there remains room for further calibration refinement, this value indicates meaningful probabilistic alignment given the strict evaluation design and absence of leak-prone features. Figure~\ref{fig:calibration_compare} shows that the two-tower model preserves clinically usable probability ordering while improving reliability relative to a baseline random-forest comparator under the same LOGO framework.
 
-\begin{figure}[h]
+\begin{figure}[t]
 \centering
-\includegraphics[width=0.45\textwidth]{../figures/calibration_plot_m2.png}
-\caption{Reliability diagram on the LOGO hold-out cohort, showing correspondence between predicted pathogenicity probability and observed positive fraction.}
-\label{fig:calibration}
+\subfloat[Two-tower hybrid]{\includegraphics[width=0.23\textwidth]{../figures/calibration_plot_m2_Two-Tower_Hybrid.png}\label{fig:calibration_hybrid}}
+\hfill
+\subfloat[Baseline random forest]{\includegraphics[width=0.23\textwidth]{../figures/calibration_plot_m2_Baseline_RF.png}\label{fig:calibration_rf}}
+\caption{Calibration comparison on LOGO evaluation. The hybrid model shows stronger agreement between predicted and observed pathogenic fractions than the baseline comparator.}
+\label{fig:calibration_compare}
 \end{figure}
 
 \subsection{Ablation Demonstrates Cross-Modal Complementarity}
@@ -170,19 +173,29 @@ The ISM heatmap provides residue-level interpretability by estimating susceptibi
 
 When mapped onto established myosin functional topology, elevated sensitivity is consistent with stress-bearing regions such as the converter domain and actin-binding cleft, where minor side-chain perturbations can alter cross-bridge kinetics, duty ratio, and mechanical efficiency \cite{Spudich2019,Nag2021}. Notably, this correspondence emerges without explicit coordinate-level graph supervision in training, implying that combined language-plus-biophysical features can recover functional geography from sequence-context perturbation statistics.
 
-\begin{figure}[h]
+\begin{figure}[t]
 \centering
-\includegraphics[width=0.45\textwidth]{../figures/ism_landscape_m2_MYH7.png}
-\caption{In silico mutagenesis heatmap across an MYH7 sequence segment. Warmer values indicate increased predicted pathogenicity for specific residue substitutions at each position.}
-\label{fig:ism}
+\subfloat[MYH7]{\includegraphics[width=0.23\textwidth]{../figures/ism_landscape_m2_TwoTower_MYH7.png}\label{fig:ism_myh7}}
+\hfill
+\subfloat[TNNT2]{\includegraphics[width=0.23\textwidth]{../figures/ism_landscape_m2_TwoTower_TNNT2.png}\label{fig:ism_tnnt2}}
+\caption{In silico mutagenesis heatmaps across representative sarcomeric genes. Warmer values indicate increased predicted pathogenicity for residue-substitution pairs.}
+\label{fig:ism_pair}
 \end{figure}
 
-\begin{figure}[h]
+To demonstrate that these mutational sensitivity patterns are not confined to a single gene context, we additionally provide cross-gene ISM exemplars in Fig.~\ref{fig:ism_cross_gene}. Distinct hotspot topology across \textit{MYBPC3}, \textit{TNNI3}, \textit{TPM1}, and \textit{ACTC1} supports the model's ability to adapt its risk landscape to gene-specific sequence constraints while preserving coherent pathogenicity gradients.
+
+\begin{figure*}[t]
 \centering
-\includegraphics[width=0.45\textwidth]{../figures/ism_landscape_m2_TNNT2.png}
-\caption{In silico mutagenesis heatmap across a TNNT2 sequence segment, demonstrating generalized prediction capacity across disparate sarcomeric topologies.}
-\label{fig:ism_tnnt2}
-\end{figure}
+\subfloat[MYBPC3]{\includegraphics[width=0.24\textwidth]{../figures/ism_landscape_m2_TwoTower_MYBPC3.png}}
+\hfill
+\subfloat[TNNI3]{\includegraphics[width=0.24\textwidth]{../figures/ism_landscape_m2_TwoTower_TNNI3.png}}
+\hfill
+\subfloat[TPM1]{\includegraphics[width=0.24\textwidth]{../figures/ism_landscape_m2_TwoTower_TPM1.png}}
+\hfill
+\subfloat[ACTC1]{\includegraphics[width=0.24\textwidth]{../figures/ism_landscape_m2_TwoTower_ACTC1.png}}
+\caption{Cross-gene ISM atlas from the two-tower model, illustrating heterogeneous vulnerability profiles across core HCM genes.}
+\label{fig:ism_cross_gene}
+\end{figure*}
 
 Although ISM does not by itself prove causal molecular mechanism, it narrows hypotheses to position-substitution pairs likely to perturb sarcomeric function. This enables focused downstream assays (e.g., ATPase kinetics, motility, or cellular contractility) rather than broad undirected screening.
 
