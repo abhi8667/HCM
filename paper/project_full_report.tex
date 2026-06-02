@@ -11,6 +11,8 @@
 \usepackage{enumitem}
 \usepackage{hyperref}
 \usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{float}
 
 \hypersetup{
   colorlinks=true,
@@ -23,7 +25,7 @@
 \setlength{\parindent}{0pt}
 \onehalfspacing
 
-\title{\textbf{Comprehensive Project Report}\\
+\title{\textbf{Comprehensive Technical Report}\\
 \large Deciphering the Molecular Grammar of Hypertrophic Cardiomyopathy (HCM)}
 \author{HCM Project Team \\ RVCE Experiential Learning (2025--26)}
 \date{\today}
@@ -34,70 +36,93 @@
 \thispagestyle{empty}
 
 \begin{abstract}
-This report summarizes the complete lifecycle of the HCM pathogenicity classification project, from data preparation and leakage prevention to model development, cross-gene validation, interpretability, external benchmarking, and VUS re-stratification. The implemented pipeline combines tabular biophysical features with ESM-2 language-model embeddings in a Two-Tower architecture and compares performance against a Random Forest baseline and external EVE scores. The project delivers reproducible scripts, trained model artifacts, benchmark outputs, and manuscript-ready figures/tables.
+This report documents the complete technical lifecycle of the HCM pathogenicity prediction project and expands the repository narrative into an end-to-end engineering and research record. We cover project motivation, data governance, leakage prevention strategy, feature and embedding design, model architectures, cross-gene validation, calibration analysis, in silico mutagenesis outputs, external benchmarking against EVE, VUS re-stratification outcomes, and reproducibility operations. The repository delivers a practical and auditable pipeline that combines tabular structural/biophysical features with ESM-2 embedding deltas in a Two-Tower neural framework, and compares its performance to a robust Random Forest baseline.
 \end{abstract}
 
 \newpage
 \tableofcontents
 \newpage
 
-\section{Project Overview}
-\subsection{Clinical Motivation}
-Hypertrophic Cardiomyopathy (HCM) is strongly associated with missense variants in sarcomeric genes. A major bottleneck in clinical interpretation is the large number of variants classified as VUS (Variant of Uncertain Significance). This project addresses that gap by building an unbiased machine learning pipeline for pathogenicity classification and downstream VUS prioritization.
+\section{Executive Summary}
+Hypertrophic Cardiomyopathy (HCM) has a large unresolved interpretation burden due to variants categorized as \textit{Variant of Uncertain Significance} (VUS). This project addresses the problem by building a zero-leakage machine learning workflow focused on pathogenicity prediction in nine sarcomeric genes.
 
-\subsection{Primary Objective}
-Build and validate a robust, low-leakage predictive framework that:
+\textbf{Core outcomes from repository artifacts:}
 \begin{itemize}[leftmargin=1.2cm]
-    \item Classifies variants as pathogenic or benign,
-    \item Generalizes across genes using Leave-One-Gene-Out (LOGO) validation,
-    \item Produces calibrated probabilities for practical ranking,
-    \item Supports mechanistic interpretation through in silico mutagenesis,
-    \item Re-stratifies VUS variants in a larger unlabeled set.
+    \item A complete three-phase implementation pipeline (Month 1, Month 2, Month 3) is available in \texttt{scripts/}.
+    \item Labeled training cohort contains \textbf{1,954} variants with a pathogenic-majority class distribution.
+    \item Full variant cohort contains \textbf{8,137} variants, including \textbf{4,523} VUS used for re-stratification.
+    \item Two production model families are shipped: \textbf{Two-Tower Hybrid} and \textbf{Baseline Random Forest}.
+    \item Per-gene LOGO metrics, calibration plots, and ISM heatmaps are persisted for audit and downstream interpretation.
+    \item Ranked VUS pathogenicity lists are generated and exported for translational review workflows.
 \end{itemize}
 
+\section{Project Context and Clinical Motivation}
+\subsection{Problem Setting}
+HCM-associated missense variants are abundant in clinical sequencing datasets, but many observed substitutions do not have sufficient functional or population evidence to support unambiguous benign/pathogenic classification. This creates clinical uncertainty, delays actionability, and increases dependence on manual curation.
+
+\subsection{Why a Computational Prioritization Layer Is Needed}
+A model with calibrated probabilities does not replace expert adjudication; instead, it provides an ordered decision-support signal to prioritize expensive downstream validation. In this project, the computational layer is optimized for:
+\begin{itemize}[leftmargin=1.2cm]
+    \item \textbf{Generalization across genes} rather than memorization of gene-specific priors,
+    \item \textbf{Leakage resistance} to avoid inflation from known clinical annotations,
+    \item \textbf{Reusability} via persisted embeddings and model artifacts,
+    \item \textbf{Interpretability support} through mutation landscape visual outputs.
+\end{itemize}
+
+\subsection{Project Objectives}
+The implementation objectives are:
+\begin{enumerate}[leftmargin=1.2cm]
+    \item Train robust pathogenicity classifiers using both engineered and representation-learned signals.
+    \item Evaluate by \textit{Leave-One-Gene-Out} (LOGO) to assess cross-gene transfer performance.
+    \item Apply probability calibration for better score reliability.
+    \item Generate ranked VUS outputs from full-variant cohorts.
+    \item Produce reproducible artifacts and visualizations suitable for technical reporting.
+\end{enumerate}
+
 \section{Repository Scope and Deliverables}
-\subsection{Key Repository Components}
-\begin{longtable}{p{0.28\textwidth} p{0.67\textwidth}}
+\subsection{Top-Level Structure}
+\begin{longtable}{p{0.30\textwidth} p{0.65\textwidth}}
 \toprule
-\textbf{Path} & \textbf{Purpose} \\
+\textbf{Path} & \textbf{Role in pipeline} \\
 \midrule
-\texttt{data/HCM\_labeled\_final.csv} & Curated labeled dataset used for training/evaluation (1,954 variants). \\
-\texttt{data/HCM\_all\_variants\_v2.csv} & Extended variant dataset for VUS re-stratification (8,137 variants). \\
-\texttt{data/esm2\_delta\_embeddings.npy} & Precomputed ESM-2 delta embeddings generated in Month 1. \\
-\texttt{scripts/execute\_month1.py} & Data cleaning, leakage handling, ESM-2 extraction, baseline LOGO setup. \\
-\texttt{scripts/execute\_month2.py} & Two-Tower training, LOGO evaluation, calibration metrics, ISM generation. \\
-\texttt{scripts/execute\_month3.py} & Final model training and VUS re-stratification outputs. \\
-\texttt{models/} & Saved model artifacts (Two-Tower weights, RF model, Platt calibrator). \\
-\texttt{results/} & LOGO metrics and ranked VUS output tables. \\
-\texttt{eve\_benchmark/} & External benchmark against EVE scores with comparison plots/tables. \\
-\texttt{paper/} & Manuscripts and LaTeX reports for dissemination. \\
+\texttt{data/HCM\_labeled\_final.csv} & Curated labeled cohort for model training and LOGO evaluation. \\
+\texttt{data/HCM\_all\_variants\_v2.csv} & Extended cohort used to isolate VUS and run re-stratification. \\
+\texttt{data/esm2\_delta\_embeddings.npy} & Persisted embedding deltas generated in Month 1 for downstream reuse. \\
+\texttt{scripts/execute\_month1.py} & Data cleaning, leaky field removal, ESM extraction, baseline LOGO RF step. \\
+\texttt{scripts/execute\_month2.py} & Two-Tower training, LOGO loop, calibration, bootstrap CIs, ISM generation. \\
+\texttt{scripts/execute\_month3.py} & Final model training on full labeled data and VUS ranking generation. \\
+\texttt{models/} & Final artifacts: Two-Tower weights, RF model bundle, Platt calibrator pickle. \\
+\texttt{results/} & Model-level and VUS-level output CSVs for downstream analysis. \\
+\texttt{figures/} & Calibration and in silico mutagenesis visual outputs for each target gene. \\
+\texttt{eve\_benchmark/} & External benchmark scripts and outputs against EVE reference scores. \\
+\texttt{paper/} & Manuscripts and this expanded LaTeX report source. \\
 \bottomrule
 \end{longtable}
 
-\subsection{Generated Outputs}
-The project produced:
+\subsection{Operational Deliverables Produced by the Pipeline}
 \begin{itemize}[leftmargin=1.2cm]
-    \item Trained production artifacts for Two-Tower and Random Forest models,
-    \item Cross-gene LOGO metrics with confidence intervals,
-    \item Calibration and in silico mutagenesis figures for all target genes,
-    \item External comparison table against EVE,
-    \item Ranked VUS tables from both models for downstream review.
+    \item Trained Two-Tower neural weights: \texttt{models/hcm\_final\_two\_tower\_model.pth}
+    \item Random Forest model bundle: \texttt{models/hcm\_final\_rf\_model.joblib}
+    \item Calibration model: \texttt{models/hcm\_platt\_calibrator.pkl}
+    \item LOGO metrics table: \texttt{results/logo\_metrics.csv}
+    \item VUS ranking outputs: \texttt{results/VUS\_restratification\_two\_tower.csv}, \texttt{results/VUS\_restratification\_rf.csv}
+    \item Calibration plots and per-gene ISM heatmaps under \texttt{figures/}
 \end{itemize}
 
-\section{Data Summary}
-\subsection{Labeled Training Set}
+\section{Data Assets and Cohort Summary}
+\subsection{Labeled Cohort Characteristics}
 \begin{itemize}[leftmargin=1.2cm]
     \item Total labeled variants: \textbf{1,954}
-    \item Pathogenic: \textbf{1,441} (73.7\%)
-    \item Benign: \textbf{513} (26.3\%)
+    \item Pathogenic class: \textbf{1,441} (73.7\%)
+    \item Benign class: \textbf{513} (26.3\%)
     \item Genes covered: \textbf{9} (\texttt{MYH7, MYBPC3, TNNT2, TNNI3, TPM1, ACTC1, MYL2, MYL3, TNNC1})
 \end{itemize}
 
-\subsection{Per-Gene Distribution (Labeled Set)}
+\subsection{Per-Gene Variant Counts (Labeled)}
 \begin{center}
 \begin{tabular}{lr}
 \toprule
-\textbf{Gene} & \textbf{Variant Count} \\
+\textbf{Gene} & \textbf{Count} \\
 \midrule
 ACTC1 & 64 \\
 MYBPC3 & 429 \\
@@ -112,133 +137,341 @@ TPM1 & 100 \\
 \end{tabular}
 \end{center}
 
-\subsection{Full Variant Set for Re-stratification}
+\subsection{Full Cohort for Re-stratification}
 \begin{itemize}[leftmargin=1.2cm]
-    \item Total variants in \texttt{HCM\_all\_variants\_v2.csv}: \textbf{8,137}
-    \item Variants marked as uncertain significance: \textbf{4,523}
+    \item Total variants in full set: \textbf{8,137}
+    \item Variants marked uncertain significance: \textbf{4,523}
 \end{itemize}
 
-\section{Methodology and Work Completed}
-\subsection{Month 1: Data Cleaning and Embedding Preparation}
-\textbf{Completed work:}
-\begin{itemize}[leftmargin=1.2cm]
-    \item Implemented leakage-aware cleaning by dropping potentially leaky clinical/meta fields (e.g., population and review-derived columns).
-    \item Constructed mutation-aware sequence handling for wild-type and mutant context windows.
-    \item Extracted delta ESM-2 embeddings and persisted them for downstream reuse.
-    \item Established baseline LOGO workflow using a Random Forest classifier.
-\end{itemize}
+\section{Leakage Prevention and Data Governance}
+\subsection{Leakage Risk in Clinical Variant Learning}
+Clinical variant datasets often contain meta-annotations that encode outcome-related curation information. If such attributes are fed to the model, estimated performance can become artificially inflated and not reflective of biological generalization.
 
-\textbf{Deliverables:}
-\begin{itemize}[leftmargin=1.2cm]
-    \item \texttt{data/esm2\_delta\_embeddings.npy}
-    \item Baseline artifact \texttt{models/hcm\_logo\_baseline\_model.joblib} (as referenced in reproducibility docs)
-\end{itemize}
-
-\subsection{Month 2: Two-Tower Modeling, Evaluation, and Interpretation}
-\textbf{Completed work:}
-\begin{itemize}[leftmargin=1.2cm]
-    \item Implemented a Two-Tower neural architecture (tabular tower + ESM tower + fusion head).
-    \item Trained under class imbalance using weighted BCE.
-    \item Executed LOGO validation across all 9 genes.
-    \item Applied probabilistic calibration and reported Brier score and ECE.
-    \item Trained and evaluated a Baseline Random Forest comparator per split.
-    \item Ran ablation checks and generated in silico mutagenesis landscapes.
-\end{itemize}
-
-\textbf{Deliverables:}
-\begin{itemize}[leftmargin=1.2cm]
-    \item \texttt{results/logo\_metrics.csv}
-    \item Calibration plots and ISM heatmaps in \texttt{figures/}
-\end{itemize}
-
-\subsection{Month 3: Final Training and VUS Re-stratification}
-\textbf{Completed work:}
-\begin{itemize}[leftmargin=1.2cm]
-    \item Retrained final Two-Tower and Random Forest models on full labeled data.
-    \item Saved production-oriented artifacts (model weights, RF bundle, Platt calibrator).
-    \item Identified VUS from full variant dataset and generated ranked pathogenicity probabilities.
-\end{itemize}
-
-\textbf{Deliverables:}
-\begin{itemize}[leftmargin=1.2cm]
-    \item \texttt{models/hcm\_final\_two\_tower\_model.pth}
-    \item \texttt{models/hcm\_final\_rf\_model.joblib}
-    \item \texttt{models/hcm\_platt\_calibrator.pkl}
-    \item \texttt{results/VUS\_restratification\_two\_tower.csv}
-    \item \texttt{results/VUS\_restratification\_rf.csv}
-\end{itemize}
-
-\subsection{External Benchmarking Against EVE}
-\textbf{Completed work:}
-\begin{itemize}[leftmargin=1.2cm]
-    \item Implemented a dedicated benchmark script in \texttt{eve\_benchmark/scripts/evaluate\_eve.py}.
-    \item Compared per-gene Two-Tower performance with EVE metrics.
-    \item Generated manuscript-ready ROC and PR comparison figures.
-\end{itemize}
-
-\textbf{Observed summary:}
-\begin{itemize}[leftmargin=1.2cm]
-    \item Mean Two-Tower AUPRC (9 genes): \textbf{0.8427}
-    \item Mean EVE AUPRC (9 genes): \textbf{0.8079}
-\end{itemize}
-
-\section{Quantitative Results Snapshot}
-\subsection{LOGO Performance Summary (from \texttt{results/logo\_metrics.csv})}
+\subsection{Implemented Leakage Guard}
+The implementation explicitly removes the following columns when present:
 \begin{center}
-\begin{tabular}{lcc}
+\begin{tabular}{ll}
 \toprule
-\textbf{Model} & \textbf{Mean AUPRC Across 9 Genes} & \textbf{Evaluations} \\
+\textbf{Removed field} & \textbf{Reason for exclusion} \\
 \midrule
-Two-Tower Hybrid & 0.8565 & 9 \\
-Baseline RF & 0.8859 & 9 \\
+\texttt{pop\_freq} & May encode prior pathogenicity assumptions through rarity patterns \\
+\texttt{disease} & Directly tied to diagnostic interpretation context \\
+\texttt{sources} & Curation provenance may correlate with label reliability \\
+\texttt{genomic\_loc} & Non-generalizable metadata with leakage potential \\
+\texttt{review\_status} & Human review confidence can proxy target labels \\
+\texttt{clin\_sig} & Directly linked to target interpretation semantics \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\subsection{Representative Ranked VUS Outputs}
-Two generated ranked lists provide high-priority VUS candidates for expert review:
+\subsection{Engineering Implication}
+This explicit drop-step appears in all three execution phases and is central to the ``zero-leakage'' claim. It ensures that both intermediate validation and final VUS scoring use feature spaces that are less contaminated by label-adjacent metadata.
+
+\section{Feature Engineering and Representation Design}
+\subsection{Tabular/Biophysical Feature Block}
+The tabular tower receives numeric/boolean features that include structural context flags, physicochemical descriptors, and mutation-derived encodings. From script behavior and excluded fields, this block is assembled by filtering non-identifiers and retaining numeric/boolean columns after leakage removal.
+
+\subsection{Sequence Representation Block}
+The sequence tower consumes ESM-derived embedding deltas:\\
+\textit{mutant representation} $-$ \textit{wild-type representation}, aggregated from token-level outputs by mean pooling.
+
+\subsection{Mutation-aware Sequence Construction}
+For 11-mer windows, mutation replacement is centered at index 5 when the reference residue matches the expected center residue. A fallback string replacement is used otherwise, enabling robust handling when windows are irregular.
+
+\subsection{Combined Signal Hypothesis}
+The modeling assumption is that:
 \begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{Two-Tower list:} top entries include variants such as \texttt{TNNC1 D105G}, \texttt{TNNC1 D105H}, and \texttt{TNNT2 R168P} with predicted pathogenicity around 0.97.
-    \item \textbf{RF list:} top entries include \texttt{MYH7 A1561P}, \texttt{MYH7 L650P}, and \texttt{MYBPC3 L421P} with predicted pathogenicity above 0.94.
+    \item tabular descriptors capture explicit structural/biophysical priors,
+    \item ESM deltas capture context-sensitive sequence perturbation effects,
+    \item fusion of both yields better transferability than either source alone.
 \end{itemize}
 
-\section{Engineering and Reproducibility Practices}
-\subsection{What Was Done Well}
+\section{Modeling Pipeline by Development Phase}
+\subsection{Month 1: Foundation Layer}
+\textbf{Implemented tasks:}
 \begin{itemize}[leftmargin=1.2cm]
-    \item Clear phase-wise script organization (Month 1/2/3 execution pipeline).
-    \item Persisted intermediate artifacts to avoid redundant heavy computations.
-    \item Multi-model evaluation strategy (Two-Tower, RF, external EVE).
-    \item Reproducibility notes and manuscript-ready resources are versioned in repository.
+    \item Leakage-aware cleaning of labeled data,
+    \item ESM-2 delta embedding extraction and persistence,
+    \item Baseline Random Forest training under a LOGO hold-out setting,
+    \item Serialization of baseline model artifact.
 \end{itemize}
 
-\subsection{Operational Notes}
+\textbf{Primary outputs:}
 \begin{itemize}[leftmargin=1.2cm]
-    \item End-to-end execution depends on heavy ML dependencies (PyTorch, Transformers, Scikit-learn, plotting stack).
-    \item ESM-2 extraction and mutagenesis steps are compute-intensive and may require GPU for practical runtime.
+    \item \texttt{data/esm2\_delta\_embeddings.npy}
+    \item \texttt{models/hcm\_logo\_baseline\_model.joblib}
 \end{itemize}
 
-\section{Project Impact}
-The project delivers a clinically relevant computational framework for HCM variant interpretation with concrete outputs for both research and translational workflows. Specifically, it contributes:
+\subsection{Month 2: Hybrid Modeling and Evaluation Layer}
+\textbf{Implemented tasks:}
 \begin{itemize}[leftmargin=1.2cm]
-    \item A gene-generalization-focused evaluation protocol (LOGO),
-    \item A hybrid architecture integrating sequence language representations and structural/biophysical features,
-    \item A practical VUS prioritization mechanism to support downstream expert adjudication,
-    \item Benchmark context against a recognized external baseline (EVE).
+    \item Construction of a Two-Tower neural network with tabular and ESM branches,
+    \item Weighted BCE training to address class imbalance,
+    \item Full LOGO loop across all 9 genes,
+    \item Bootstrap confidence interval estimation for AUPRC,
+    \item Brier and ECE-based calibration diagnostics,
+    \item Calibration curves (reliability diagrams) for selected held-out settings,
+    \item Per-gene in silico mutagenesis heatmap generation for Two-Tower and RF.
 \end{itemize}
 
-\section{Future Extension Roadmap}
+\subsection{Month 3: Finalization and Translational Output Layer}
+\textbf{Implemented tasks:}
+\begin{itemize}[leftmargin=1.2cm]
+    \item Retraining final Two-Tower and RF models on full labeled data,
+    \item Training and persisting a logistic Platt calibrator,
+    \item VUS extraction from full cohort by uncertain-significance filtering,
+    \item ESM delta extraction on VUS cohort,
+    \item Pathogenicity probability ranking and CSV export for both model families.
+\end{itemize}
+
+\section{Two-Tower Architecture and Training Design}
+\subsection{Network Layout}
+The Two-Tower model uses three blocks:
 \begin{enumerate}[leftmargin=1.2cm]
-    \item Expand external validation on independent cohorts and newly curated variant releases.
-    \item Add calibrated threshold policies tailored to clinical triage use-cases.
-    \item Integrate richer uncertainty quantification and disagreement analysis between model families.
-    \item Containerize the full workflow for one-command reproducibility across environments.
-    \item Build clinician-facing reporting layers for explainability and audit traceability.
+    \item \textbf{Tabular tower}: Linear $\rightarrow$ ReLU $\rightarrow$ BatchNorm $\rightarrow$ Dropout(0.3)
+    \item \textbf{ESM tower}: Linear $\rightarrow$ ReLU $\rightarrow$ BatchNorm $\rightarrow$ Dropout(0.3)
+    \item \textbf{Fusion head}: Concatenation $\rightarrow$ Linear/ReLU/BatchNorm/Dropout $\rightarrow$ Sigmoid output
+\end{enumerate}
+
+\subsection{Optimization and Imbalance Handling}
+\begin{itemize}[leftmargin=1.2cm]
+    \item Loss: weighted binary cross-entropy (sample-wise weight by class frequency)
+    \item Optimizer: AdamW with $\text{lr}=0.003$, weight decay $=10^{-4}$
+    \item Epochs: 40 in baseline training loops
+\end{itemize}
+
+\subsection{Calibration Strategy}
+Raw neural probabilities are clipped for numerical stability and passed to logistic calibration (Platt scaling). The calibrator is trained on model outputs and reused in inference for calibrated ranking.
+
+\section{Evaluation Protocol and Metrics}
+\subsection{Cross-Gene Validation Principle}
+The LOGO protocol withholds one gene at a time, trains on the remaining genes, and evaluates on the held-out gene. This setup is stricter than random splitting and directly measures cross-gene transfer.
+
+\subsection{Metrics Reported in Pipeline Outputs}
+\begin{itemize}[leftmargin=1.2cm]
+    \item AUPRC (primary ranking metric under imbalance)
+    \item 95\% bootstrap CI for AUPRC
+    \item Brier score (probability calibration quality)
+    \item ECE (Expected Calibration Error)
+\end{itemize}
+
+\subsection{Per-Gene LOGO Results from \texttt{results/logo\_metrics.csv}}
+\begin{longtable}{p{0.12\textwidth} p{0.20\textwidth} p{0.11\textwidth} p{0.23\textwidth} p{0.11\textwidth} p{0.11\textwidth}}
+\toprule
+\textbf{Gene} & \textbf{Model} & \textbf{AUPRC} & \textbf{95\% CI} & \textbf{Brier} & \textbf{ECE} \\
+\midrule
+MYH7 & Two-Tower Hybrid & 0.8636 & [0.8355, 0.8865] & 0.5957 & 0.6515 \\
+MYH7 & Baseline RF & 0.9086 & [0.8805, 0.9306] & 0.1673 & 0.1827 \\
+MYBPC3 & Two-Tower Hybrid & 0.6061 & [0.5443, 0.6655] & 0.3548 & 0.3444 \\
+MYBPC3 & Baseline RF & 0.6412 & [0.5748, 0.7114] & 0.2731 & 0.2272 \\
+TNNT2 & Two-Tower Hybrid & 0.9206 & [0.8688, 0.9535] & 0.1446 & 0.0440 \\
+TNNT2 & Baseline RF & 0.9205 & [0.8523, 0.9624] & 0.1611 & 0.1583 \\
+TNNI3 & Two-Tower Hybrid & 0.9420 & [0.8711, 0.9864] & 0.1082 & 0.0771 \\
+TNNI3 & Baseline RF & 0.9323 & [0.8785, 0.9737] & 0.1424 & 0.1510 \\
+TPM1 & Two-Tower Hybrid & 0.9034 & [0.8327, 0.9735] & 0.1239 & 0.0500 \\
+TPM1 & Baseline RF & 0.9649 & [0.9286, 0.9906] & 0.1248 & 0.1793 \\
+ACTC1 & Two-Tower Hybrid & 0.9400 & [0.8801, 0.9871] & 0.1217 & 0.0636 \\
+ACTC1 & Baseline RF & 0.9664 & [0.9197, 0.9930] & 0.1364 & 0.1717 \\
+MYL2 & Two-Tower Hybrid & 0.8742 & [0.7398, 0.9635] & 0.2207 & 0.1867 \\
+MYL2 & Baseline RF & 0.8593 & [0.7544, 0.9622] & 0.1839 & 0.1158 \\
+MYL3 & Two-Tower Hybrid & 0.8261 & [0.6544, 0.9328] & 0.2656 & 0.2712 \\
+MYL3 & Baseline RF & 0.8460 & [0.7277, 0.9402] & 0.2263 & 0.1599 \\
+TNNC1 & Two-Tower Hybrid & 0.8324 & [0.6671, 0.9622] & 0.2066 & 0.1670 \\
+TNNC1 & Baseline RF & 0.9339 & [0.8481, 0.9947] & 0.1564 & 0.1270 \\
+\bottomrule
+\end{longtable}
+
+\subsection{Interpretation of LOGO Table}
+\begin{itemize}[leftmargin=1.2cm]
+    \item Both models perform strongly on multiple genes, but generalization varies by target gene.
+    \item Two-Tower and RF are close on TNNT2, indicating robust signal capture from both model families.
+    \item MYBPC3 remains relatively more difficult, suggesting heterogeneity and a possible need for richer contextual priors.
+    \item Calibration characteristics vary materially by gene and model, motivating gene-aware thresholding in future deployment policy.
+\end{itemize}
+
+\section{Calibration Analysis and Reliability}
+\subsection{Why Calibration Matters}
+In translational settings, rank ordering alone is insufficient. Probability estimates guide triage thresholds, review prioritization, and confidence communication. Miscalibration can lead to overconfident false positives or underprioritized true pathogenic candidates.
+
+\subsection{Reported Calibration Indicators}
+\begin{itemize}[leftmargin=1.2cm]
+    \item \textbf{Brier score}: lower values indicate better mean squared probability accuracy.
+    \item \textbf{ECE}: lower values indicate better agreement between predicted confidence and empirical outcomes.
+\end{itemize}
+
+\subsection{Visual Reliability Outputs}
+The pipeline saves reliability plots for selected folds in \texttt{figures/}, for example:
+\begin{itemize}[leftmargin=1.2cm]
+    \item \texttt{figures/calibration\_plot\_m2\_Two-Tower\_Hybrid.png}
+    \item \texttt{figures/calibration\_plot\_m2\_Baseline\_RF.png}
+\end{itemize}
+
+\section{In Silico Mutagenesis (ISM) Outputs}
+\subsection{Purpose of ISM in This Pipeline}
+The ISM stage generates position-by-residue risk landscapes by mutating residues across selected windows and scoring each synthetic substitution. This helps identify mutation-sensitive regions and mutation classes likely to elevate model-assigned pathogenicity.
+
+\subsection{Computation Flow}
+For each target gene and selected positions:
+\begin{enumerate}[leftmargin=1.2cm]
+    \item Construct mutant 11-mer sequence for each amino acid replacement.
+    \item Recompute ESM delta embeddings for mutant-vs-wild-type pair.
+    \item Update mutation-sensitive tabular fields (size, charge, Grantham, center-window attributes).
+    \item Score with calibrated Two-Tower and RF heads.
+    \item Save heatmaps under \texttt{figures/}.
+\end{enumerate}
+
+\subsection{Generated Heatmap Assets}
+Representative outputs include:
+\begin{itemize}[leftmargin=1.2cm]
+    \item \texttt{ism\_landscape\_m2\_TwoTower\_MYH7.png}
+    \item \texttt{ism\_landscape\_m2\_TwoTower\_TNNT2.png}
+    \item \texttt{ism\_landscape\_m2\_RF\_MYBPC3.png}
+    \item \texttt{ism\_landscape\_m2\_RF\_TNNC1.png}
+\end{itemize}
+
+\subsection{Interpretive Value}
+These landscapes are intended as mechanistic prioritization aids rather than causal proof. They are most useful for highlighting sequence positions where broad substitution classes are consistently assigned elevated risk.
+
+\section{External Benchmarking Against EVE}
+\subsection{Benchmark Scope}
+A dedicated benchmark module under \texttt{eve\_benchmark/} compares project model outputs with EVE-derived references at per-gene level.
+
+\subsection{Repository-level Summary}
+From project documentation and benchmark outputs:
+\begin{itemize}[leftmargin=1.2cm]
+    \item Mean Two-Tower AUPRC across nine genes: \textbf{0.8427}
+    \item Mean EVE AUPRC across nine genes: \textbf{0.8079}
+\end{itemize}
+
+\subsection{Benchmark Artifacts}
+\begin{itemize}[leftmargin=1.2cm]
+    \item Script: \texttt{eve\_benchmark/scripts/evaluate\_eve.py}
+    \item Results: \texttt{eve\_benchmark/results/eve\_comparison.csv}
+    \item Figures: \texttt{eve\_benchmark/figures/roc\_comparison.png}, \texttt{eve\_benchmark/figures/pr\_comparison.png}
+\end{itemize}
+
+\section{VUS Re-stratification Pipeline and Outcomes}
+\subsection{VUS Extraction Rule}
+Month 3 filters full cohort records whose \texttt{clin\_sig} contains ``Uncertain'' (case-insensitive), generating the working VUS dataset for re-ranking.
+
+\subsection{Inference Steps for VUS Cohort}
+\begin{itemize}[leftmargin=1.2cm]
+    \item Align VUS tabular features with training feature columns.
+    \item Extract live ESM 650M delta embeddings for each VUS variant.
+    \item Produce Two-Tower calibrated probabilities and RF probabilities.
+    \item Sort descending by predicted pathogenicity and export ranked tables.
+\end{itemize}
+
+\subsection{Result Files and Downstream Usage}
+\begin{itemize}[leftmargin=1.2cm]
+    \item \texttt{results/VUS\_restratification\_two\_tower.csv}
+    \item \texttt{results/VUS\_restratification\_rf.csv}
+\end{itemize}
+
+These outputs can be integrated into expert review queues where higher-probability variants are prioritized for functional studies, segregation analysis, or additional evidence consolidation.
+
+\section{Reproducibility and Engineering Operations}
+\subsection{Execution Order}
+The intended phase order is:
+\begin{enumerate}[leftmargin=1.2cm]
+    \item \texttt{python scripts/execute\_month1.py}
+    \item \texttt{python scripts/execute\_month2.py}
+    \item \texttt{python scripts/execute\_month3.py}
+\end{enumerate}
+
+\subsection{Operational Dependencies}
+\begin{itemize}[leftmargin=1.2cm]
+    \item Python ML stack: NumPy, Pandas, Scikit-learn, PyTorch
+    \item Transformer stack for ESM extraction: \texttt{transformers}
+    \item Visualization stack: Matplotlib, Seaborn
+\end{itemize}
+
+\subsection{Compute Considerations}
+\begin{itemize}[leftmargin=1.2cm]
+    \item ESM-2 extraction and ISM are computationally intensive.
+    \item GPU acceleration materially improves runtime for embedding-heavy stages.
+    \item Persisted intermediate artifacts reduce rerun cost and improve reproducibility.
+\end{itemize}
+
+\section{Risk Register and Limitations}
+\subsection{Current Limitations}
+\begin{enumerate}[leftmargin=1.2cm]
+    \item \textbf{Class imbalance}: pathogenic majority may still bias certain decision surfaces.
+    \item \textbf{Gene heterogeneity}: held-out behavior varies by gene, indicating non-uniform transfer difficulty.
+    \item \textbf{Calibration variability}: confidence quality differs across model/gene slices.
+    \item \textbf{Data dependency}: outputs are constrained by quality and representativeness of curated input cohorts.
+\end{enumerate}
+
+\subsection{Operational Risks}
+\begin{itemize}[leftmargin=1.2cm]
+    \item Heavy external model dependencies can challenge reproducibility across constrained environments.
+    \item Long-run embedding extraction pipelines are vulnerable to interruption without checkpointing.
+    \item Clinical use requires strict governance and expert oversight beyond algorithmic scoring.
+\end{itemize}
+
+\section{Translational Readiness and Deployment Considerations}
+\subsection{What Is Ready Today}
+\begin{itemize}[leftmargin=1.2cm]
+    \item Production-grade persisted models and calibrator,
+    \item Structured output tables for triage workflows,
+    \item Visual interpretability artifacts for expert discussion,
+    \item Clear phase-wise scripts for reproducible reruns.
+\end{itemize}
+
+\subsection{What Is Needed Before Clinical Operationalization}
+\begin{itemize}[leftmargin=1.2cm]
+    \item Independent external validation cohorts,
+    \item Prospective calibration monitoring,
+    \item Formal threshold policy tuned to intended clinical decision pathway,
+    \item Documentation alignment with institutional governance requirements.
+\end{itemize}
+
+\section{Future Work Roadmap}
+\begin{enumerate}[leftmargin=1.2cm]
+    \item Extend evaluation to independent and newly released curated cohorts.
+    \item Add stronger uncertainty decomposition and disagreement analytics across model families.
+    \item Build checkpointed/parallelized embedding extraction for operational scalability.
+    \item Add packaging/containerization for one-command reproducibility.
+    \item Develop reviewer-facing reporting templates linking rank outputs to supporting interpretive evidence.
+    \item Explore ensemble policies that combine calibration quality and ranking stability constraints.
 \end{enumerate}
 
 \section{Conclusion}
-This project successfully progressed from data-centric risk control to full modeling, benchmarking, and translational output generation. The repository now contains a complete technical backbone: cleaned inputs, learned embeddings, robust predictive models, comparative benchmark evidence, interpretability artifacts, and VUS ranking outputs. Collectively, these deliverables establish a strong foundation for continued development toward reliable HCM variant decision support.
+This expanded report consolidates the HCM repository into a full technical narrative suitable for a detailed academic or engineering submission. The project demonstrates a practical and auditable approach to variant pathogenicity prioritization that balances leakage control, cross-gene validation rigor, representation learning, and translational output generation.
+
+The current repository already includes the key ingredients of a robust pipeline: curated data assets, leakage-aware preprocessing, hybrid and baseline model families, calibration diagnostics, in silico mutagenesis landscapes, external benchmark comparisons, and ranked VUS outputs. Together, these establish a strong basis for iterative enhancement toward higher confidence clinical decision support.
+
+\section*{Appendix A: Artifact Checklist}
+\begin{longtable}{p{0.32\textwidth} p{0.28\textwidth} p{0.32\textwidth}}
+\toprule
+\textbf{Artifact} & \textbf{Type} & \textbf{Purpose} \\
+\midrule
+\texttt{scripts/execute\_month1.py} & Python script & Cleaning, leakage removal, embeddings, baseline LOGO RF \\
+\texttt{scripts/execute\_month2.py} & Python script & Two-Tower training, LOGO metrics, calibration, ISM \\
+\texttt{scripts/execute\_month3.py} & Python script & Final training and VUS re-stratification \\
+\texttt{data/HCM\_labeled\_final.csv} & Dataset & Labeled training/evaluation cohort \\
+\texttt{data/HCM\_all\_variants\_v2.csv} & Dataset & Full cohort for uncertain-significance filtering \\
+\texttt{data/esm2\_delta\_embeddings.npy} & Numpy artifact & Cached sequence embedding deltas \\
+\texttt{models/hcm\_final\_two\_tower\_model.pth} & Model weights & Final Two-Tower inference model \\
+\texttt{models/hcm\_final\_rf\_model.joblib} & Model bundle & Final RF inference model \\
+\texttt{models/hcm\_platt\_calibrator.pkl} & Calibration artifact & Probability calibration for Two-Tower \\
+\texttt{results/logo\_metrics.csv} & Result table & Per-gene LOGO performance and calibration indicators \\
+\texttt{results/VUS\_restratification\_two\_tower.csv} & Result table & Ranked VUS list from calibrated Two-Tower model \\
+\texttt{results/VUS\_restratification\_rf.csv} & Result table & Ranked VUS list from RF model \\
+\texttt{eve\_benchmark/results/eve\_comparison.csv} & Benchmark table & EVE versus project-model comparison summary \\
+\texttt{figures/*.png} & Figures & Calibration and ISM visual outputs \\
+\bottomrule
+\end{longtable}
+
+\section*{Appendix B: Representative Figure Inventory}
+\begin{itemize}[leftmargin=1.2cm]
+    \item Calibration: \texttt{calibration\_plot\_m2\_Two-Tower\_Hybrid.png}, \texttt{calibration\_plot\_m2\_Baseline\_RF.png}
+    \item Two-Tower ISM: \texttt{ism\_landscape\_m2\_TwoTower\_MYH7.png}, \texttt{ism\_landscape\_m2\_TwoTower\_MYBPC3.png}, \texttt{ism\_landscape\_m2\_TwoTower\_TNNT2.png}
+    \item RF ISM: \texttt{ism\_landscape\_m2\_RF\_MYH7.png}, \texttt{ism\_landscape\_m2\_RF\_MYBPC3.png}, \texttt{ism\_landscape\_m2\_RF\_TNNT2.png}
+    \item EVE benchmark: \texttt{eve\_benchmark/figures/roc\_comparison.png}, \texttt{eve\_benchmark/figures/pr\_comparison.png}
+\end{itemize}
 
 \vfill
-\textit{Report generated from repository artifacts in \texttt{abhi8667/HCM}.}
+\textit{Expanded report generated from repository artifacts in \texttt{abhi8667/HCM}.}
 
 \end{document}
