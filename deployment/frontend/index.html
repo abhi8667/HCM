@@ -59,21 +59,154 @@
         </div>
 
         <div class="predictor-card reveal">
+          <!-- Toggle Tabs -->
+          <div class="predictor-tabs">
+            <button type="button" class="tab-btn active" id="tab-preset">Database Presets</button>
+            <button type="button" class="tab-btn" id="tab-custom">Custom Predictor</button>
+          </div>
+
           <form id="predictor-form" class="air-form">
-            <select id="sequence-select" class="air-select">
-              <option value="">Select a variant...</option>
-            </select>
-            <span style="display:flex; align-items:center; font-weight:600; color:var(--air-text-muted);">OR</span>
-            <input type="text" id="custom-sequence" class="air-input" placeholder="Custom 11-AA sequence..." maxlength="11">
-            <input type="number" id="custom-position" class="air-input" placeholder="Pos (e.g. 100)" style="max-width: 160px;">
-            <button type="submit" class="btn-solid">Predict</button>
+            <!-- Preset Tab Content -->
+            <div class="tab-content" id="preset-content">
+              <select id="sequence-select" class="air-select">
+                <option value="">Select a preset variant...</option>
+              </select>
+            </div>
+
+            <!-- Custom Tab Content -->
+            <div class="tab-content" id="custom-content" style="display: none;">
+              <div class="custom-fields-grid">
+                <select id="custom-gene" class="air-select">
+                  <option value="">Select Gene...</option>
+                  <option value="MYH7">MYH7</option>
+                  <option value="MYBPC3">MYBPC3</option>
+                  <option value="TNNT2">TNNT2</option>
+                  <option value="TNNI3">TNNI3</option>
+                  <option value="TPM1">TPM1</option>
+                  <option value="MYL2">MYL2</option>
+                  <option value="MYL3">MYL3</option>
+                  <option value="ACTC1">ACTC1</option>
+                  <option value="TNNC1">TNNC1</option>
+                </select>
+
+                <input type="number" id="custom-position" class="air-input" placeholder="Pos (e.g. 152)" min="1">
+
+                <select id="custom-ref" class="air-select">
+                  <option value="">Wildtype (Ref)...</option>
+                  <option value="A">Alanine (A)</option>
+                  <option value="C">Cysteine (C)</option>
+                  <option value="D">Aspartate (D)</option>
+                  <option value="E">Glutamate (E)</option>
+                  <option value="F">Phenylalanine (F)</option>
+                  <option value="G">Glycine (G)</option>
+                  <option value="H">Histidine (H)</option>
+                  <option value="I">Isoleucine (I)</option>
+                  <option value="K">Lysine (K)</option>
+                  <option value="L">Leucine (L)</option>
+                  <option value="M">Methionine (M)</option>
+                  <option value="N">Asparagine (N)</option>
+                  <option value="P">Proline (P)</option>
+                  <option value="Q">Glutamine (Q)</option>
+                  <option value="R">Arginine (R)</option>
+                  <option value="S">Serine (S)</option>
+                  <option value="T">Threonine (T)</option>
+                  <option value="V">Valine (V)</option>
+                  <option value="W">Tryptophan (W)</option>
+                  <option value="Y">Tyrosine (Y)</option>
+                </select>
+
+                <select id="custom-alt" class="air-select">
+                  <option value="">Mutant (Alt)...</option>
+                  <option value="A">Alanine (A)</option>
+                  <option value="C">Cysteine (C)</option>
+                  <option value="D">Aspartate (D)</option>
+                  <option value="E">Glutamate (E)</option>
+                  <option value="F">Phenylalanine (F)</option>
+                  <option value="G">Glycine (G)</option>
+                  <option value="H">Histidine (H)</option>
+                  <option value="I">Isoleucine (I)</option>
+                  <option value="K">Lysine (K)</option>
+                  <option value="L">Leucine (L)</option>
+                  <option value="M">Methionine (M)</option>
+                  <option value="N">Asparagine (N)</option>
+                  <option value="P">Proline (P)</option>
+                  <option value="Q">Glutamine (Q)</option>
+                  <option value="R">Arginine (R)</option>
+                  <option value="S">Serine (S)</option>
+                  <option value="T">Threonine (T)</option>
+                  <option value="V">Valine (V)</option>
+                  <option value="W">Tryptophan (W)</option>
+                  <option value="Y">Tyrosine (Y)</option>
+                </select>
+              </div>
+
+              <!-- Collapsible Advanced Window -->
+              <div class="advanced-toggle-btn" id="advanced-toggle-btn">Advanced Sequence Options ▾</div>
+              <div class="advanced-input-container" id="advanced-input-container" style="display: none;">
+                <p class="advanced-help">Provide an 11-AA sequence window centered around the wildtype residue. If omitted, the system resolves it dynamically from the target gene's wildtype structure.</p>
+                <input type="text" id="custom-sequence" class="air-input" placeholder="11-AA Wildtype Window (Optional)" maxlength="11" style="text-transform: uppercase;">
+              </div>
+            </div>
+
+            <button type="submit" class="btn-solid" style="width: 100%; margin-top: 15px;">Predict Variant Pathogenicity</button>
           </form>
 
-          <!-- Prediction Result -->
+          <!-- Loading Spinner Overlay -->
+          <div id="predict-loader" class="loader-overlay-inline" style="display: none;">
+            <div class="spinner"></div>
+            <div class="loader-text" id="predict-loader-text">Analyzing variant...</div>
+          </div>
+
+          <!-- Error Alert Banner -->
+          <div id="predict-error" class="error-panel" style="display: none;">
+            <div class="error-icon">⚠</div>
+            <div class="error-details">
+              <h4 class="error-title">Inference Error</h4>
+              <p class="error-message" id="predict-error-message"></p>
+              <button type="button" class="btn-outline-small" id="predict-error-retry">Retry Connection</button>
+            </div>
+          </div>
+
+          <!-- Prediction Result Upgraded -->
           <div id="prediction-result" class="prediction-anim" style="display: none;">
             <div class="result-box">
-              <h3 id="result-status" class="result-title"></h3>
-              <p class="result-conf">Late-Fusion Confidence: <strong id="result-confidence"></strong></p>
+              <div class="result-header">
+                <div>
+                  <h3 id="result-status" class="result-title"></h3>
+                  <div class="badge-row">
+                    <span class="badge" id="result-confidence-badge"></span>
+                    <span class="badge" id="result-version-badge">v1.0</span>
+                  </div>
+                </div>
+                <div class="score-display">
+                  <div class="score-value" id="result-calibrated-score">0.0%</div>
+                  <div class="score-label">Two-Tower Calibrated Probability</div>
+                </div>
+              </div>
+
+              <div class="model-meta-grid">
+                <div class="meta-item">
+                  <span class="meta-label">Two-Tower NN Prob:</span>
+                  <span class="meta-val" id="result-raw-score">-</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Random Forest Prob:</span>
+                  <span class="meta-val" id="result-rf-score">-</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">ESM-2 Embeddings:</span>
+                  <span class="meta-val" id="result-esm-status">-</span>
+                </div>
+              </div>
+
+              <!-- Explainability Tower -->
+              <div class="explainability-section">
+                <h4 class="explainability-title">Random Forest Local Explanations</h4>
+                <p class="explainability-help">The features that most heavily influenced the classification of this mutation:</p>
+                <div id="explanations-list" class="explanations-list">
+                  <!-- Dynamic explanation bars -->
+                </div>
+              </div>
             </div>
           </div>
         </div>
