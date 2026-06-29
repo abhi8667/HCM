@@ -110,21 +110,22 @@ mutagenesis, VUS re-stratification, ClinVar, gnomAD.
 
 \subsection{Proteins, Mutations, and Variant Interpretation}
 
-Proteins are the workhorses of the cell. Made from long chains of amino acids that fold into intricate three dimensional shapes, they handle everything from speeding up chemical reactions to giving cells their structures to passing along signals. But when a missense mutation swaps one amino acid for another, the impact can vary widely from no effect at all to a complete breakdown of functions. All of this depends on where the change happens and how does it affect the local chemistry.
+Proteins are the workhorses of the cell. Made from long chains of amino acids that fold into intricate three-dimensional shapes, they handle everything from speeding up chemical reactions to giving cells their structures to passing along signals. But when a missense mutation swaps one amino acid for another, the impact can vary widely, from no effect at all to a complete breakdown of function. All of this depends on where the change happens and how it affects the local chemistry.
 
-Experimental approaches like deep mutational scanning \cite{fowler2014deep} give you a real answer. But this approach is highly expensive and slow relative to the rate at which the variants are discovered. This is the reason why computational prediction tools have become so central in clinical genomics. They work by exploiting evolutionary conservation, structural context, and machine learning to assign pathogenicity scores, working within the 5 tier ACMG/AMP classification system \cite{richards2015}---this system helps in classifying: pathogenic, likely pathogenic, uncertain significance, likely benign, or benign. Despite many years of progress on general purpose predictors, inconsistency remains in performance within a narrow disease specific gene panels. This gap is what this paper tries to address.
+Experimental approaches like deep mutational scanning \cite{fowler2014deep} give you a real answer. But this approach is highly expensive and slow relative to the rate at which variants are discovered. This is the reason why computational prediction tools have become so central in clinical genomics. They work by exploiting evolutionary conservation, structural context, and machine learning to assign pathogenicity scores within the five-tier ACMG/AMP classification system \cite{richards2015}---pathogenic, likely pathogenic, uncertain significance, likely benign, or benign. Despite many years of progress on general-purpose predictors, inconsistency remains in performance within narrow disease-specific gene panels. This gap is what this paper tries to address.
+
 
 \subsection{Hypertrophic Cardiomyopathy: Clinical and Genetic Context}
 
-HCM roughly affects 1 in 200 to 500 people and usually follows autosomal dominant inheritance \cite{maron2013}. The main hallmark of hypertrophic cardiomyopathy (HCM) is a thickened wall of the left ventricle that cannot be explained by high blood pressure or valve disease. Clinically HCM is unpredictable. Some people live their whole lives without any major symptoms, while others with HCM experience sudden cardiac death during day to day activity---sometimes as their first sign of the disease. Being common in people yet often silent is exactly why accurate interpretation of genetic variance matters so much for families at risk. 
+HCM roughly affects 1 in 200 to 500 people and usually follows autosomal dominant inheritance \cite{maron2013}. The main hallmark of hypertrophic cardiomyopathy (HCM) is a thickened wall of the left ventricle that cannot be explained by high blood pressure or valve disease. Clinically, HCM is unpredictable. Some people live their whole lives without any major symptoms, while others with HCM experience sudden cardiac death during day-to-day activity---sometimes as their first sign of the disease. Being common in people yet often silent is exactly why accurate interpretation of genetic variance matters so much for families at risk.
 
-At its core, HCM is the disease of the basic unit---the sarcomere---that makes the heart muscles contract. About 60\% of patients with genetic diagnosis carry harmful variants in sarcomere genes. Two genes, \textit{MYH7} and \textit{MYBPC3}, account for more than half of the known cases, while others are spread across genes like \textit{TNNT2}, \textit{TNNI3}, \textit{TPM1}, \textit{ACTC1}, \textit{MYL2}, \textit{MYL3}, and \textit{TNNC1}. These 9 genes form the panel for our study in this paper.
+At its core, HCM is a disease of the basic unit---the sarcomere---that makes the heart muscles contract. About 60\% of patients with genetic diagnosis carry harmful variants in sarcomere genes. Two genes, \textit{MYH7} and \textit{MYBPC3}, account for more than half of the known cases, while others are spread across genes like \textit{TNNT2}, \textit{TNNI3}, \textit{TPM1}, \textit{ACTC1}, \textit{MYL2}, \textit{MYL3}, and \textit{TNNC1}. These nine genes form the panel for our study in this paper.
 
 One complication is that the same mutations can lead to very different outcomes for different people. That means looking at the level of risk is not enough---you need to understand each variant on its own.
 
 \subsection{The VUS Bottleneck in HCM}
 
-The real clinical problem in HCM does not lie in the clearly pathogenic variants, which generally have segregation and functional data to back them up. The real problem is the large grey zone of missense substitutions that fall somewhere in between. Under ACMG/AMP guidelines \cite{richards2015}, variants without enough evidence to say whether a variant is safe or dangerous get labeled as Variant of Uncertain Significance (VUS).
+The real clinical problem in HCM does not lie in the clearly pathogenic variants, which generally have segregation and functional data to back them up. The real problem is the large grey zone of missense substitutions that fall somewhere in between. Under ACMG/AMP guidelines \cite{richards2015}, variants without enough evidence to say whether a variant is safe or dangerous get labeled as Variants of Uncertain Significance (VUS).
 
 Across the nine genes in our study, we collected 8,137 missense observations---and more than 4,500 of them are currently tagged as VUS in ClinVar. That is over twice the number of variants with confident labels. For families at risk, a VUS result means no clear guidance and no way to move forward with cascade screening.
 
@@ -133,57 +134,58 @@ To our knowledge, no tool has yet been built and rigorously tested---without dat
 \subsection{Problem Statement and Approach}
 
 \subsubsection{Label Circularity in Existing Predictors}
-One issue that doesn't get enough attention in this field is label circularity. Many tools that predict whether a genetic variant is harmful are trained on features that were themselves derived from the same clinical workflow that produced the training labels. In other words, the models end up learning to copy the labeling process rather than the underlying biology. We took deliberate steps to avoid this problem both in how we engineered features and in how we evaluate performance.
+One issue that does not get enough attention in this field is label circularity. Many tools that predict whether a genetic variant is harmful are trained on features that were themselves derived from the same clinical workflow that produced the training labels. In other words, the models end up learning to copy the labeling process rather than the underlying biology. We took deliberate steps to avoid this problem both in how we engineered features and in how we evaluate performance, as described in Sections~\ref{sec:related} and~\ref{sec:methodology}.
 
 \subsubsection{Our Approach}
-To tackle these problems, we built a two model framework trained on 1,954 high confidence sarcomeric HCM variants. Importantly, we drew labels only from multi submitter ClinVar records, ensuring that the training data reflected consensus rather than single source judgment.
+To tackle these problems, we built a two-model framework trained on 1,954 high-confidence sarcomeric HCM variants. Importantly, we drew labels only from multi-submitter ClinVar records, ensuring that the training data reflected consensus rather than single-source judgment.
 
 % ==============================================================
 % SECTION II  --  RELATED WORK
 % ==============================================================
+
 \section{Related Work}
 \label{sec:related}
 
 \subsection{Proteome-Wide Pathogenicity Prediction}
 
-EVE \cite{frazer2021eve} is an impressive resource: it covers 36 million variants across 3,219 genes. But when it comes to hypertrophic cardiomyopathy (HCM), it has a key limitation. EVE doesn't capture the specific domain architecture of sarcomeric proteins. For example, it treats the motor domain of MYH7 just like any other conserved segment, missing the disease-specific structural logic that actually drives HCM pathology. 
+EVE \cite{frazer2021eve} is an impressive resource: it covers 36 million variants across 3,219 genes. But when it comes to hypertrophic cardiomyopathy (HCM), it has a key limitation. EVE does not capture the specific domain architecture of sarcomeric proteins. For example, it treats the motor domain of \textit{MYH7} just like any other conserved segment, missing the disease-specific structural logic that actually drives HCM pathology.
 
 AlphaMissense \cite{cheng2023alphamissense} takes a different path. It fine-tunes the AlphaFold2 architecture using allele frequencies from human and primate populations to build a proteome-wide classifier that covers about 89\% of all possible human missense variants. The structural detail baked into AlphaFold's representations gives it a clear advantage in principle.
 
-REVEL \cite{ioannidis2016revel} is an ensemble method that combines scores from thirteen different tools (including SIFT, PolyPhen-2, MutPred, VEST, GERP++, phyloP, and others) using a random forest trained on ClinVar. It's widely used in clinical pipelines through dbNSFP and Ensembl VEP. The catch is that its performance depends heavily on how many ClinVar labels a gene already has---genes with lots of historical annotations look easy, while genes with sparse records look hard. That pattern reflects label density, not the true molecular complexity of the problem.
+REVEL \cite{ioannidis2016revel} is an ensemble method that combines scores from thirteen different tools, including SIFT, PolyPhen-2, MutPred, VEST, GERP++, phyloP, and others, using a random forest trained on ClinVar. It is widely used in clinical pipelines through dbNSFP and Ensembl VEP. The catch is that its performance depends heavily on how many ClinVar labels a gene already has---genes with lots of historical annotations look easy, while genes with sparse records look hard. That pattern reflects label density, not the true molecular complexity of the problem.
 
-MetaRNN \cite{li2022metarnn} takes a different approach, using gated recurrent units to combine 28 functional scores with a local sequence window of $\pm 1$ codon. The authors deliberately excluded ClinVar-trained sub-scores like MPC and ClinPred to avoid inflating performance through overlapping training and test variants---a problem they call Type I circularity. That's a genuine methodological improvement. However, MetaRNN still doesn't enforce gene-level separation between training and test splits, so the protein-level homology issue described by Grimm et al. (Type II circularity) remains.
+MetaRNN \cite{li2022metarnn} takes a different approach, using gated recurrent units to combine 28 functional scores with a local sequence window of $\pm 1$ codon. The authors deliberately excluded ClinVar-trained sub-scores like MPC and ClinPred to avoid inflating performance through overlapping training and test variants---a problem they call Type~I circularity. That is a genuine methodological improvement. However, MetaRNN still does not enforce gene-level separation between training and test splits, so the protein-level homology issue described by Grimm \textit{et al.} \cite{grimm2015circularity} (Type~II circularity) remains.
 
 Across all four tools we reviewed, the same core weakness stands out: none were designed with gene-held-out generalization in mind, and none encode the specific structural features---like domain membership, interface proximity, or mechanical coupling---that make sarcomere biology distinctive.
 
 \subsection{Disease-Specific Tools for Inherited Cardiac Conditions}
 
-CardioBoost \cite{zhang2021cardioboost} is the closest precedent to our work. It's a gradient-boosted classifier built specifically for rare missense variants in inherited cardiomyopathies and arrhythmias, using a gnomAD frequency cutoff of 0.1\% to minimize benign contamination. On its internal validation set, it reported an AUPRC of 91\% for cardiomyopathy variants---an impressive result. CardioBoost is available through the CardioClassifier web platform and covers most major sarcomeric HCM genes, though TNNC1 is missing from its precomputed scores.
+CardioBoost \cite{zhang2021cardioboost} is the closest precedent to our work. It is a gradient-boosted classifier built specifically for rare missense variants in inherited cardiomyopathies and arrhythmias, using a gnomAD frequency cutoff of 0.1\% to minimize benign contamination. On its internal validation set, it reported an AUPRC of 91\% for cardiomyopathy variants---an impressive result. CardioBoost is available through the CardioClassifier web platform and covers most major sarcomeric HCM genes, though \textit{TNNC1} is missing from its precomputed scores.
 
-The main methodological issue is that CardioBoost validated performance using random variant-level train-test splits. As we show in Section \ref{sec:results}, this choice substantially overstates accuracy compared to gene-held-out evaluation.
+The main methodological issue is that CardioBoost validated performance using random variant-level train-test splits. As we show in Section~\ref{sec:experimental_setup}, this choice substantially overstates accuracy compared to gene-held-out evaluation.
 
 \subsection{Data Resources}
 
 Building a leakage-free HCM training set required pulling from three public repositories:
 \begin{itemize}
-    \item ClinVar \cite{landrum2016clinvar} for pathogenicity labels
-    \item UniProt Swiss-Prot \cite{uniprot2023} for structural and sequence annotations
-    \item gnomAD \cite{karczewski2020} for population allele frequencies
+    \item ClinVar \cite{landrum2016clinvar} for pathogenicity labels.
+    \item UniProt Swiss-Prot \cite{uniprot2023} for structural and sequence annotations.
+    \item gnomAD \cite{karczewski2020} for population allele frequencies.
 \end{itemize}
-Section \ref{sec:data} describes the retrieval pipeline and how each resource feeds into the framework.
+Section~\ref{sec:data} describes the retrieval pipeline and how each resource feeds into the framework.
 
 \subsection{Machine Learning for Variant Pathogenicity and the Leakage Problem}
 
 \subsubsection{The Case for Disease-Specific Machine Learning}
-It's no surprise that CardioBoost outperforms proteome-wide tools on cardiac variants. Training on disease-relevant examples and engineering features that reflect the biology---like sarcomere domain boundaries, proximity to force-transmission interfaces, and cardiac-specific evolutionary patterns---captures signals that cross-gene averages simply miss. Proteome-wide models are powerful, but they're blunt instruments for targeted panel interpretation.
+It is no surprise that CardioBoost outperforms proteome-wide tools on cardiac variants. Training on disease-relevant examples and engineering features that reflect the biology---like sarcomere domain boundaries, proximity to force-transmission interfaces, and cardiac-specific evolutionary patterns---captures signals that cross-gene averages simply miss. Proteome-wide models are powerful, but they are blunt instruments for targeted panel interpretation.
 
-ESM-2 \cite{lin2023esm2} adds something genuinely new. It's a transformer trained on hundreds of millions of protein sequences via masked language modeling. Its representations carry rich structural and evolutionary information without requiring multiple sequence alignments at inference time. The key property we use is that mutations cause perturbations in ESM-2 embedding space that reflect evolutionary fitness cost---independent of clinical labels. This independence is crucial for avoiding leakage.
+ESM-2 \cite{lin2023esm2} adds something genuinely new. It is a transformer trained on hundreds of millions of protein sequences via masked language modeling. Its representations carry rich structural and evolutionary information without requiring multiple sequence alignments at inference time. The key property we use is that mutations cause perturbations in ESM-2 embedding space that reflect evolutionary fitness cost---independent of clinical labels. This independence is crucial for avoiding leakage.
 
 \subsubsection{The Data Leakage Problem in Clinical Genomics}
-Leakage is common enough in ML-based science that it deserves careful attention here. In variant pathogenicity prediction, Grimm et al. identified two forms:
+Leakage is common enough in ML-based science \cite{kapoor2023leakage} that it deserves careful attention here. In variant pathogenicity prediction, Grimm \textit{et al.} \cite{grimm2015circularity} identified two forms:
 \begin{itemize}
-    \item \textbf{Type I}: the same variant appears in both training and test sets
-    \item \textbf{Type II}: different variants from the same protein appear in both splits
+    \item \textbf{Type I:} the same variant appears in both training and test sets.
+    \item \textbf{Type II:} different variants from the same protein appear in both splits.
 \end{itemize}
 Both inflate reported metrics and mask poor generalization.
 
@@ -194,6 +196,7 @@ Feature leakage is another issue. If input features include population allele fr
 % ==============================================================
 \section{Proposed Methodology}
 \label{sec:methodology}
+
 
 \subsection{Data Curation and Problem Formulation}
 \label{sec:data}
@@ -206,7 +209,7 @@ We built the training dataset by aggregating and filtering clinical and function
 \end{itemize}
 
 \vspace{2mm}\noindent\textbf{Dataset Statistics.}
-The labeled training set contains 1,954 missense variants---1,441 pathogenic (73.7\%) and 513 benign (26.3\%)---across the nine sarcomeric genes. The inference cohort has 8,137 variants total, of which 4,524 are VUS. Per-gene counts are shown in Table \ref{tab:cohort}.
+The labeled training set contains 1,954 missense variants---1,441 pathogenic (73.7\%) and 513 benign (26.3\%)---across the nine sarcomeric genes. The inference cohort has 8,137 variants total, of which 4,524 are VUS. Per-gene counts are shown in Table~\ref{tab:cohort}.
 
 \begin{table}[h]
 \centering
@@ -245,7 +248,7 @@ Each variant is described by a 51-dimensional vector, organized into five groups
     \item \textbf{Charge and size alterations:} Explicit encoding of wild-type and mutant charge classes ($-1, 0, +1$) and size classes ($1, 2, 3$), plus signed deltas ($\Delta\mathrm{charge}$, $\Delta\mathrm{size}$).
     \item \textbf{Domain-level context:} Flags for whether the mutation falls in a motor domain, coiled-coil segment, regulatory zone, or other annotated functional region.
     \item \textbf{Functional site proximity:} Indicators for proximity to active sites, ligand-binding sites, metal-binding sites, phosphorylation targets, and local secondary structure type (helix, strand, coil).
-    \item \textbf{Relative position:} Normalized sequence coordinate ($\rho = \mathrm{position} / \mathrm{protein length}$).
+    \item \textbf{Relative position:} Normalized sequence coordinate ($\rho = \mathrm{position} / \mathrm{protein\ length}$).
 \end{itemize}
 
 Where UniProt annotations were missing, we imputed zeros---a conservative choice that avoids over-interpreting unannotated regions.
@@ -361,9 +364,9 @@ For a window of length $L$ and the 20-amino-acid alphabet $\mathcal{A}$, we gene
 \begin{enumerate}
   \item Compute $\Deltaemb^{(j,a)} = f_\theta(s^{(j,a)})_j - f_\theta(s^{\mathrm{WT}})_j \in \mathbb{R}^{1280}$.
   \item Update the tabular descriptor to reflect the new substitution (Grantham distance, charge and size deltas, binding site flags, etc.).
-  \item Run the updated pair $(\xtab^{(j,a)}, \Deltaemb^{(j,a)})$ through the calibrated model. This produces an ISM matrix $M \in [0, 1]^{20\times L}$:
+  \item Run the updated pair $(\mathbf{x}^{\mathrm{tab},(j,a)}, \Deltaemb^{(j,a)})$ through the calibrated model. This produces an ISM matrix $M \in [0, 1]^{20\times L}$:
   \begin{equation}
-    M_{a,j} = \hat{p}^{\,\mathrm{cal}}\!\left(\xtab^{(j,a)}, \Deltaemb^{(j,a)}\right).
+    M_{a,j} = \hat{p}^{\,\mathrm{cal}}\!\left(\mathbf{x}^{\mathrm{tab},(j,a)}, \Deltaemb^{(j,a)}\right).
     \label{eq:ism_matrix}
   \end{equation}
 \end{enumerate}
@@ -466,14 +469,18 @@ The reliability diagrams for the TNNT2 LOGO holdout show the same pattern (Fig. 
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\columnwidth]{calibration_plot_m2_Two-Tower_Hybrid.png}
+\IfFileExists{calibration_plot_m2_Two-Tower_Hybrid.png}{%
+\includegraphics[width=\columnwidth]{calibration_plot_m2_Two-Tower_Hybrid.png}%
+}{\fbox{\parbox[c][0.55\columnwidth][c]{0.9\columnwidth}{\centering Calibration plot file not found.}}}
 \caption{Reliability diagram (\textit{TNNT2} LOGO hold-out): Platt-calibrated Two-Tower Hybrid model ($\text{Brier} = 0.145$, $\text{ECE} = 0.044$).}
 \label{fig:cal_tt}
 \end{figure}
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\columnwidth]{calibration_plot_m2_Baseline_RF.png}
+\IfFileExists{calibration_plot_m2_Baseline_RF.png}{%
+\includegraphics[width=\columnwidth]{calibration_plot_m2_Baseline_RF.png}%
+}{\fbox{\parbox[c][0.55\columnwidth][c]{0.9\columnwidth}{\centering Calibration plot file not found.}}}
 \caption{Reliability diagram (\textit{TNNT2} LOGO hold-out): Baseline Random Forest ($\text{Brier} = 0.161$, $\text{ECE} = 0.158$).}
 \label{fig:cal_rf}
 \end{figure}
@@ -628,7 +635,9 @@ Examining the row patterns in the MYH7 heatmap, charge-reversing substitutions (
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\columnwidth]{ism_landscape_m2_TwoTower_MYH7.png}
+\IfFileExists{ism_landscape_m2_TwoTower_MYH7.png}{%
+\includegraphics[width=\columnwidth]{ism_landscape_m2_TwoTower_MYH7.png}%
+}{\fbox{\parbox[c][0.55\columnwidth][c]{0.9\columnwidth}{\centering ISM heatmap file not found.}}}
 \caption{\textit{In silico} mutagenesis (ISM) heatmap: Two-Tower
   Hybrid model, \textit{MYH7} (20 representative positions). Warm
   colours (red) indicate high predicted pathogenicity ($\hat{p}$);
@@ -639,7 +648,9 @@ Examining the row patterns in the MYH7 heatmap, charge-reversing substitutions (
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\columnwidth]{ism_landscape_m2_TwoTower_TNNT2.png}
+\IfFileExists{ism_landscape_m2_TwoTower_TNNT2.png}{%
+\includegraphics[width=\columnwidth]{ism_landscape_m2_TwoTower_TNNT2.png}%
+}{\fbox{\parbox[c][0.55\columnwidth][c]{0.9\columnwidth}{\centering ISM heatmap file not found.}}}
 \caption{\textit{In silico} mutagenesis (ISM) heatmap: Two-Tower
   Hybrid model, \textit{TNNT2}. Hot-spot columns correspond to the
   N-terminal tropomyosin-binding regulatory region.}
@@ -703,7 +714,7 @@ For clinical diagnostic labs, the ISM landscapes offer three concrete uses. Firs
 
 The RF outperforming the neural network on raw AUPRC was not what we initially expected, but it is less surprising when you consider the dataset size. We have 1,954 labeled variants in a 1,331-dimensional feature space. This is a high-dimensional, low-sample situation where tree ensembles usually perform well. Random Forests resist overfitting here because each tree sees only a part of the features, and the average of the ensemble smooths out the variance from individual trees. 
 
-On the other hand, the issue of calibration is where the Two-Tower model consistently excels. Platt scaling directly optimizes the probability outputs for accuracy, while the RF probabilities come from leaf class proportions without an explicit calibration step. For clinical decision-making, where you need to understand not only the rank order of variants but also how much to trust each score, this difference really matters. A threshold of pˆ ≥ 0.90 has a clear meaning with a calibrated model. However, that same threshold is harder to interpret with uncalibrated RF outputs.
+On the other hand, the issue of calibration is where the Two-Tower model consistently excels. Platt scaling directly optimizes the probability outputs for accuracy, while the RF probabilities come from leaf class proportions without an explicit calibration step. For clinical decision-making, where you need to understand not only the rank order of variants but also how much to trust each score, this difference really matters. A threshold of $\hat{p} \geq 0.90$ has a clear meaning with a calibrated model. However, that same threshold is harder to interpret with uncalibrated RF outputs.
 
 \subsection{Limitations}
 
@@ -726,9 +737,7 @@ More broadly, we think these results show that a carefully designed disease-spec
 % --- Data Availability ----------------------------------------------------
 \section*{Data and Code Availability}
 
-All processed datasets, trained model weights, evaluation scripts, and code for ISM landscape generation are available in the repository. Cardio The ESM-2 backbone is available at https://huggingface.co/facebook/esm2_t33_650M_UR50D.
-Boost scores were from https://cardiodb.org/cardioboost/ . 
-REVEL and MetaRNN scores were from dbNSFP v4.5.
+All processed datasets, trained model weights, evaluation scripts, and code for ISM landscape generation are available in the repository. The ESM-2 backbone is available through the Hugging Face model hub as \texttt{facebook/esm2\_t33\_650M\_UR50D}. CardioBoost scores were obtained from the CardioBoost web resource, and REVEL and MetaRNN scores were obtained from dbNSFP v4.5.
 
 
 % ==============================================================
@@ -750,7 +759,7 @@ P.~C. Ng and S.~Henikoff,
 I.~A. Adzhubei \textit{et al.},
 ``A method and server for predicting damaging missense mutations,''
 \textit{Nat. Methods}, vol.~7, no.~4, pp.~248--249, 2010.
-`
+
 \bibitem{richards2015}
 S.~Richards \textit{et al.},
 ``Standards and guidelines for the interpretation of sequence variants:
