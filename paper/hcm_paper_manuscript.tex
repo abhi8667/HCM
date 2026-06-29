@@ -5,7 +5,7 @@
 %  Approach to Sarcomeric Variant Pathogenicity
 %
 %  Format  : IEEEtran journal,compsoc (double-column)
-%  Authors : RVCE Experiential Learning Project 2026-26
+%  Authors : RVCE Experiential Learning Project 2025-26
 %
 %  Part I  (Sec I–III-B) : teammate contribution, copied verbatim
 %  Part II (Sec III-C+)  : second-author contribution
@@ -24,10 +24,8 @@
 \usepackage{multirow}
 \usepackage{xcolor}
 \usepackage{hyperref}
-% IEEE standard prefers no colored hyperlinks for print compatibility
-\hypersetup{
-  hidelinks
-}
+\hypersetup{hidelinks}
+
 %  -- - Custom commands  --  --  --  --  --  --  --  --  --  --  --  --  -- --
 \newcommand{\Deltaemb}{\Delta\mathbf{e}}
 \newcommand{\xtab}{\mathbf{x}^{\mathrm{tab}}}
@@ -36,59 +34,66 @@
 \newcommand{\zesm}{\mathbf{z}^{\mathrm{esm}}}
 \newcommand{\zfus}{\mathbf{z}^{\mathrm{fus}}}
 \newcommand{\phat}{\hat{p}}
+
+\makeatletter
+\newcommand{\linebreakand}{%
+  \end{@IEEEauthorhalign}
+  \hfill\mbox{}\par
+  \mbox{}\hfill\begin{@IEEEauthorhalign}
+}
+\makeatother
+
 % ==============================================================
 \begin{document}
 
-%  -- - Title & Authors  --  --  --  --  --  --  --  --  --  --  --  --  -- --
 \title{Deciphering the Molecular Grammar of Hypertrophic
 Cardiomyopathy: A Zero-Leakage Language Modeling Approach
 to Sarcomeric Variant Pathogenicity}
 
 \author{%
-  \IEEEauthorblockN{Computational Genomics Team}\\
-  \IEEEauthorblockA{Department of Computer Science and Engineering,\\
-  RV College of Engineering, Bengaluru, India 560059}
+  \IEEEauthorblockN{Dr. Sudarshan. B. G}
+  \IEEEauthorblockA{Associate Professor\\
+  RV College of Engineering\\
+  sudarshanbg@rvce.edu.in}
+  \and
+  \IEEEauthorblockN{Ashwin Thammaiah K}
+  \IEEEauthorblockA{Department of Civil Engineering\\
+  Assistant Professor\\
+  RV College of Engineering\\
+  ashwinthammaiahk@rvce.edu.in}
+  \and
+  \IEEEauthorblockN{Ekansh Nandan Sharma}
+  \IEEEauthorblockA{Bachelor of Engineering\\
+  RV College of Engineering\\
+  ekanshnandans.cs25@rvce.edu.in}
+  \linebreakand
+  \IEEEauthorblockN{Tejash Manoj Pathak}
+  \IEEEauthorblockA{Bachelor of Engineering\\
+  RV College of Engineering\\
+  tejashmanjohp.cs25@rvce.edu.in}
+  \and
+  \IEEEauthorblockN{Abhinandan Jaiswal}
+  \IEEEauthorblockA{Bachelor of Engineering\\
+  RV College of Engineering\\
+  abhinandanjaiswal.cv25@rvce.edu.in}
+  \and
+  \IEEEauthorblockN{Adhar Chaudhari}
+  \IEEEauthorblockA{Bachelor of Engineering\\
+  RV College of Engineering\\
+  adharchaudhari.im25@rvce.edu.in}
 }
 
 \maketitle
 
 % ==============================================================
 \begin{abstract}
-Hypertrophic cardiomyopathy (HCM) is the most prevalent inherited
-disorder of cardiac muscle, responsible for a disproportionate
-fraction of sudden cardiac deaths in young individuals. Genomic
-sequencing routinely reveals missense substitutions in nine
-sarcomeric genes for which clinical pathogenicity classification
-remains unresolved -- a bottleneck that directly impedes cascade
-screening and risk stratification. We present a dual-model,
-zero-leakage pathogenicity prediction framework that eliminates two
-distinct leakage channels simultaneously: feature-level leakage is
-prevented by excluding all ACMG/AMP-derivable covariates from the
-training matrix, and homology leakage is prevented by evaluating
-under Leave-One-Gene-Out (LOGO) cross-validation, which forces
-out-of-gene inference under distribution shift. The framework trains
-on 1,954 high-confidence labeled missense variants (1,441
-pathogenic, 513 benign) across nine sarcomeric genes and deploys
-on 4,524 unresolved Variants of Uncertain Significance. Two
-complementary classifiers are developed: a Baseline Random Forest
-operating on 51 hand-crafted biophysical descriptors, and a
-Two-Tower Hybrid Neural Network that additionally fuses
-1,280-dimensional differential evolutionary embeddings extracted
-from a frozen 650M-parameter ESM-2 protein language model. Under
-LOGO evaluation, the Baseline RF achieves a mean AUPRC of
-\textbf{0.886} (95\% CI across all genes), outperforming all five
-external benchmarks: EVE~(0.791), AlphaMissense~(0.800),
-REVEL~(0.842), MetaRNN~(0.849), and CardioBoost~(0.876), across
-seven of nine target genes. Post-hoc Platt scaling calibrates
-raw neural probabilities to clinically meaningful likelihoods
-(Brier score 0.145 on held-out \textit{TNNT2}). Residue-level
-explainability is provided through In Silico Mutagenesis (ISM)
-heatmaps that map predicted vulnerability to known biomechanical
-interfaces -- including the myosin converter domain and actin-binding
-cleft -- without explicit 3-D coordinate supervision. These results
-demonstrate that disease-specific, zero-leakage representation
-learning captures the sarcomeric molecular grammar and constitutes
-a validated triage mechanism for clinical VUS re-stratification.
+Hypertrophic cardiomyopathy (HCM) is the most common inherited heart muscle disorder and a well-known cause of sudden cardiac death in otherwise healthy young individuals. Routine sequencing now routinely surfaces missense substitutions across nine sarcomeric genes, but figuring out which ones actually matter clinically is still largely unsolved. Families waiting on cascade screening have no clear path forward.
+
+We tackled this by building a two-model pathogenicity prediction framework designed from the ground up to avoid the data leakage problems that silently inflate reported metrics in this field. On the feature side, we stripped out any variable that could be traced back to ACMG/AMP curation. On the evaluation side, we used Leave-One-Gene-Out (LOGO) cross-validation so the models had to generalize to gene families they had never seen during training.
+
+Training used 1,954 high-confidence labeled missense variants (1,441 pathogenic; 513 benign) across the nine sarcomeric genes, with the framework then applied to 4,524 unresolved Variants of Uncertain Significance (VUS). We built two classifiers: a Baseline Random Forest using 51 hand-crafted biophysical descriptors, and a Two-Tower Hybrid Neural Network combining those descriptors with 1,280-dimensional differential embeddings from a frozen 650M-parameter ESM-2 protein language model.
+
+Under LOGO evaluation, the Baseline RF hit a mean AUPRC of \textbf{0.886} (95\% CI across all genes), beating EVE~(0.791), AlphaMissense~(0.800), REVEL~(0.842), MetaRNN~(0.849), and CardioBoost~(0.876) on seven of nine genes. We used Platt Scaling to align the neural networks raw prediction with real clinical probabilities, achieving a Brier score of 0.145 on held-out \textit{TNNT2} data. To help understand what the model was learning, per residue \textit{in silico} mutagenesis (ISM) heat maps were created. Interestingly these highlight non vulnerable hotspots. This includes myosin converter domain and the actin binding cleft even though the model had no access to 3-D structural information. Overall, these results help demonstrate that disease focused and leakage free approach can help capture meaning aspects of sarcomere biology. More importantly, it does so well enough to be practically useful in prioritizing variants of uncertain significance (VUS) in a clinical setup.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -98,343 +103,91 @@ variants, data leakage, Leave-One-Gene-Out, Platt scaling, in silico
 mutagenesis, VUS re-stratification, ClinVar, gnomAD.
 \end{IEEEkeywords}
 
-
 % ==============================================================
 % SECTION I  --  INTRODUCTION
-% (Teammate contribution  --  verbatim from Part1.tex)
 % ==============================================================
 \section{Introduction}
 
 \subsection{Proteins, Mutations, and Variant Interpretation}
 
-Proteins are the primary functional molecules of the cell, encoded
-by the genome and assembled from sequences of amino acids that fold
-into precise three-dimensional structures. This architecture
-determines a protein's stability, binding partners, enzymatic
-activity, and structural role within macromolecular machines. A
-single missense mutation -- the substitution of one amino acid for
-another -- can perturb this structure in ways ranging from
-imperceptible to catastrophic, depending on the physicochemical
-nature of the change and its location within the protein's
-functional architecture. With modern next-generation sequencing now
-capable of surveying the full coding content of the human genome,
-clinical and research pipelines routinely surface thousands of such
-variants per individual, the vast majority of whose functional
-consequences remain uncharacterised.
+Proteins are the workhorses of the cell. Made from long chains of amino acids that fold into intricate three dimensional shapes, they handle everything from speeding up chemical reactions to giving cells their structures to passing along signals. But when a missense mutation swaps one amino acid for another, the impact can vary widely from no effect at all to a complete breakdown of functions. All of this depends on where the change happens and how does it affect the local chemistry.
 
-Experimental approaches such as enzymatic assays and high-throughput
-deep mutational scanning \cite{fowler2014deep} provide direct
-functional evidence but cannot scale to the volume of variants
-uncovered by population-level sequencing. Computational
-\textit{in silico} tools have therefore become an essential complement,
-leveraging evolutionary conservation, protein structure, and
-statistical learning to assign pathogenicity likelihoods at scale.
-These tools operate within the five-tier classification framework
-defined by the American College of Medical Genetics and Genomics and
-the Association for Molecular Pathology (ACMG/AMP)
-\cite{richards2015} -- Pathogenic, Likely Pathogenic, Variant of
-Uncertain Significance (VUS), Likely Benign, and Benign -- which
-forms the operational target for any predictive model intended for
-clinical deployment. Despite steady methodological advances, no
-existing tool has resolved the challenge of disease-specific variant
-interpretation in clinically actionable gene panels, a gap that
-motivates the present work.
+Experimental approaches like deep mutational scanning \cite{fowler2014deep} give you a real answer. But this approach is highly expensive and slow relative to the rate at which the variants are discovered. This is the reason why computational prediction tools have become so central in clinical genomics. They work by exploiting evolutionary conservation, structural context, and machine learning to assign pathogenicity scores, working within the 5 tier ACMG/AMP classification system \cite{richards2015}---this system helps in classifying: pathogenic, likely pathogenic, uncertain significance, likely benign, or benign. Despite many years of progress on general purpose predictors, inconsistency remains in performance within a narrow disease specific gene panels. This gap is what this paper tries to address.
 
 \subsection{Hypertrophic Cardiomyopathy: Clinical and Genetic Context}
 
-Hypertrophic cardiomyopathy (HCM) is the most prevalent inherited
-disorder of the cardiac muscle, affecting approximately one in 200
-to 500 individuals in the general population and following an
-autosomal dominant inheritance pattern \cite{maron2013}. The
-condition is defined by unexplained left ventricular hypertrophy
-(LVH) in the absence of another systemic or cardiac disease capable
-of producing the observed magnitude of wall thickening
-\cite{maron2013}. Despite a heterogeneous clinical
-spectrum -- many carriers remain asymptomatic for decades -- HCM is
-recognised as a leading cause of sudden cardiac death (SCD) in
-young people and competitive athletes, a risk that may manifest
-without prior warning \cite{semsarian2015}. The combination of a
-common genetic cause with a deceptively silent natural history makes
-accurate variant-level genotype interpretation central to clinical
-management.
+HCM roughly affects 1 in 200 to 500 people and usually follows autosomal dominant inheritance \cite{maron2013}. The main hallmark of hypertrophic cardiomyopathy (HCM) is a thickened wall of the left ventricle that cannot be explained by high blood pressure or valve disease. Clinically HCM is unpredictable. Some people live their whole lives without any major symptoms, while others with HCM experience sudden cardiac death during day to day activity---sometimes as their first sign of the disease. Being common in people yet often silent is exactly why accurate interpretation of genetic variance matters so much for families at risk. 
 
-The genetic architecture of HCM is dominated by mutations in genes
-encoding components of the cardiac sarcomere, the fundamental
-contractile unit of the cardiomyocyte \cite{seidman2001}. Roughly
-60\% of genotype-positive HCM cases carry pathogenic or likely
-pathogenic variants in sarcomeric protein-coding genes, with
-\textit{MYH7} (encoding the $\beta$-myosin heavy chain) and
-\textit{MYBPC3} (encoding cardiac myosin-binding protein C)
-together accounting for over half of these cases \cite{seidman2001}.
-The remaining disease burden is distributed across seven further
-sarcomeric genes: \textit{TNNT2}, \textit{TNNI3}, \textit{TPM1},
-\textit{ACTC1}, \textit{MYL2}, \textit{MYL3}, and \textit{TNNC1}.
-These nine genes constitute the panel examined in this work.
-Crucially, genotype--phenotype correlation in HCM is imperfect;
-the same missense variant can produce widely differing clinical
-presentations across carriers, complicating direct gene-level risk
-inference and underscoring the need for variant-level pathogenicity
-scoring.
+At its core, HCM is the disease of the basic unit---the sarcomere---that makes the heart muscles contract. About 60\% of patients with genetic diagnosis carry harmful variants in sarcomere genes. Two genes, \textit{MYH7} and \textit{MYBPC3}, account for more than half of the known cases, while others are spread across genes like \textit{TNNT2}, \textit{TNNI3}, \textit{TPM1}, \textit{ACTC1}, \textit{MYL2}, \textit{MYL3}, and \textit{TNNC1}. These 9 genes form the panel for our study in this paper.
+
+One complication is that the same mutations can lead to very different outcomes for different people. That means looking at the level of risk is not enough---you need to understand each variant on its own.
 
 \subsection{The VUS Bottleneck in HCM}
 
-The clinical interpretation bottleneck in HCM lies not with frankly
-pathogenic variants -- those supported by consistent functional
-evidence and familial segregation data -- but with the large fraction
-of observed missense substitutions that resist confident
-classification. Under the ACMG/AMP framework \cite{richards2015},
-variants that lack sufficient evidence to be placed in the
-pathogenic or benign categories are designated Variants of Uncertain
-Significance (VUS). In HCM panel testing, VUS findings are
-particularly prevalent: the majority of detected missense
-substitutions in sarcomeric genes cannot be definitively classified
-with current evidence, leaving at-risk family members without
-actionable genetic information, blocking predictive cascade
-screening, and placing clinical teams in the position of managing
-risk for an unresolved diagnosis.
+The real clinical problem in HCM does not lie in the clearly pathogenic variants, which generally have segregation and functional data to back them up. The real problem is the large grey zone of missense substitutions that fall somewhere in between. Under ACMG/AMP guidelines \cite{richards2015}, variants without enough evidence to say whether a variant is safe or dangerous get labeled as Variant of Uncertain Significance (VUS).
 
-The scale of this problem is not abstract. In the consolidated
-multi-database variant set assembled for this study -- spanning 8,137
-missense observations across the nine canonical HCM sarcomeric
-genes -- more than 4,500 variants carry a VUS designation in ClinVar
-\cite{landrum2016clinvar}, representing a clinically unresolved
-majority that exceeds the total number of confidently labelled
-variants by a factor greater than two. No existing computational
-tool has been specifically designed to triage this backlog under
-rigorous, leakage-free evaluation conditions. Resolving it is the
-central motivation of this paper.
+Across the nine genes in our study, we collected 8,137 missense observations---and more than 4,500 of them are currently tagged as VUS in ClinVar. That is over twice the number of variants with confident labels. For families at risk, a VUS result means no clear guidance and no way to move forward with cascade screening.
+
+To our knowledge, no tool has yet been built and rigorously tested---without data leakage---to sort through the backlog. Filling this gap is exactly what we set out to do.
 
 \subsection{Problem Statement and Approach}
 
 \subsubsection{Label Circularity in Existing Predictors}
-
-A fundamental flaw in many existing pathogenicity predictors is
-\textit{label circularity} -- a form of data leakage in which model
-inputs are co-derived from the same clinical workflows that generate
-the training labels, causing the model to reconstruct the labelling
-protocol rather than learn the underlying molecular biology. We
-address this problem explicitly and at two levels in our design,
-as detailed in Section~\ref{sec:related} and Section~\ref{sec:data}.
+One issue that doesn't get enough attention in this field is label circularity. Many tools that predict whether a genetic variant is harmful are trained on features that were themselves derived from the same clinical workflow that produced the training labels. In other words, the models end up learning to copy the labeling process rather than the underlying biology. We took deliberate steps to avoid this problem both in how we engineered features and in how we evaluate performance.
 
 \subsubsection{Our Approach}
-
-To address these limitations, we present a dual-model zero-leakage
-pathogenicity prediction framework trained on 1,954 high-confidence
-labelled missense variants across the nine sarcomeric HCM genes.
-Variant labels are drawn exclusively from multi-submitter ClinVar
-records \cite{landrum2016clinvar, landrum2018clinvar}; population
-frequency data from the Genome Aggregation Database (gnomAD)
-\cite{karczewski2020} supplement the benign class with
-high-frequency population variants, correcting for the well-known
-ascertainment bias in clinical databases toward pathogenic reports.
-Structural and biochemical features are derived from UniProt
-Swiss-Prot annotations \cite{uniprot2023}, yielding 51 engineered
-descriptors per variant that capture domain localisation, secondary
-structure context, binding site proximity, and physicochemical
-substitution cost. All fields directly derivable from the ACMG/AMP
-evidence criteria -- population frequency scores, clinical
-significance annotations, review status, and prior disease
-assertions -- are excluded from the feature set prior to training.
-
-We train two complementary models: a Baseline Random Forest (RF)
-operating on the 51 hand-crafted HCM-specific structural features,
-and a Two-Tower Hybrid Neural Network that augments these tabular
-features with differential evolutionary embeddings extracted from a
-frozen 650-million-parameter ESM-2 protein language model
-\cite{lin2023esm2}. Both models are evaluated under
-\textit{Leave-One-Gene-Out} (LOGO) cross-validation, which withholds
-all variants from a single gene at test time, preventing homology
-contamination across the nine gene families. The resulting framework
-is benchmarked against five established external tools spanning
-evolutionary, structural, and ensemble paradigms.
-
+To tackle these problems, we built a two model framework trained on 1,954 high confidence sarcomeric HCM variants. Importantly, we drew labels only from multi submitter ClinVar records, ensuring that the training data reflected consensus rather than single source judgment.
 
 % ==============================================================
 % SECTION II  --  RELATED WORK
-% (Teammate contribution  --  verbatim from Part1.tex)
 % ==============================================================
 \section{Related Work}
 \label{sec:related}
 
-The computational prediction of missense variant pathogenicity has
-evolved substantially from early conservation-based heuristics to
-large-scale deep learning frameworks, yet a persistent gap remains
-between proteome-wide generality and the disease-specific precision
-required for clinical variant interpretation in targeted gene panels.
-We survey the three classes of prior work most directly relevant to
-our contribution.
-
 \subsection{Proteome-Wide Pathogenicity Prediction}
 
-The dominant paradigm in computational variant interpretation has
-been the development of tools trained and evaluated across the full
-human proteome, exploiting signals -- evolutionary constraint,
-structural context, allele frequency -- that are broadly available
-regardless of the specific disease or gene under study.
+EVE \cite{frazer2021eve} is an impressive resource: it covers 36 million variants across 3,219 genes. But when it comes to hypertrophic cardiomyopathy (HCM), it has a key limitation. EVE doesn't capture the specific domain architecture of sarcomeric proteins. For example, it treats the motor domain of MYH7 just like any other conserved segment, missing the disease-specific structural logic that actually drives HCM pathology. 
 
-Frazer \textit{et al.} introduced EVE (Evolutionary model of Variant
-Effect) \cite{frazer2021eve}, a fully unsupervised variational
-autoencoder trained on deep multiple sequence alignments drawn from
-across the tree of life. By modelling the distribution of naturally
-occurring sequence variation in each protein family, EVE infers
-which positions and substitutions are evolutionarily tolerated and
-which are constrained -- producing pathogenicity scores without
-exposure to any clinical label. Applied to over 36 million variants
-across 3,219 disease-associated human genes, EVE demonstrated that
-evolutionary co-variation alone carries substantial pathogenicity
-signal. However, because the model is blind to the disease-specific
-structural context of sarcomeric proteins -- the precise domain
-boundaries, regulatory interfaces, and force-transmission
-architecture that define HCM pathomechanics -- its inferences are
-necessarily generic.
+AlphaMissense \cite{cheng2023alphamissense} takes a different path. It fine-tunes the AlphaFold2 architecture using allele frequencies from human and primate populations to build a proteome-wide classifier that covers about 89\% of all possible human missense variants. The structural detail baked into AlphaFold's representations gives it a clear advantage in principle.
 
-Cheng \textit{et al.} presented AlphaMissense
-\cite{cheng2023alphamissense}, an adaptation of the AlphaFold2
-structure prediction framework fine-tuned on human and primate
-population allele frequency data. By combining structural context
-derived from AlphaFold's learned protein representations with
-evolutionary information encoded in population-level variant
-frequencies, AlphaMissense achieves proteome-wide coverage and
-confidently classifies 89\% of all possible human missense
-substitutions as likely pathogenic or likely benign. While
-representing the current state of the art for proteome-wide
-prediction, the model is trained on signals averaged across the
-entire proteome and has not been adapted to the disease-specific
-distribution of sarcomeric HCM variants; nor does its published
-evaluation employ gene-held-out cross-validation.
+REVEL \cite{ioannidis2016revel} is an ensemble method that combines scores from thirteen different tools (including SIFT, PolyPhen-2, MutPred, VEST, GERP++, phyloP, and others) using a random forest trained on ClinVar. It's widely used in clinical pipelines through dbNSFP and Ensembl VEP. The catch is that its performance depends heavily on how many ClinVar labels a gene already has---genes with lots of historical annotations look easy, while genes with sparse records look hard. That pattern reflects label density, not the true molecular complexity of the problem.
 
-Ioannidis \textit{et al.} proposed REVEL \cite{ioannidis2016revel},
-an ensemble meta-predictor combining scores from thirteen individual
-tools -- including SIFT, PolyPhen-2, MutPred, VEST, GERP++, and
-phyloP -- using a random forest trained on ClinVar-derived labels.
-Pre-computed REVEL scores are now standard components of clinical
-bioinformatics pipelines, including dbNSFP and Ensembl VEP. REVEL's
-design, however, embeds a structural dependence on ClinVar label
-density: for genes that are heavily annotated in ClinVar, the
-meta-predictor benefits from a rich prior that does not represent the
-true challenge of unseen variant interpretation in less-studied
-sarcomeric loci.
+MetaRNN \cite{li2022metarnn} takes a different approach, using gated recurrent units to combine 28 functional scores with a local sequence window of $\pm 1$ codon. The authors deliberately excluded ClinVar-trained sub-scores like MPC and ClinPred to avoid inflating performance through overlapping training and test variants---a problem they call Type I circularity. That's a genuine methodological improvement. However, MetaRNN still doesn't enforce gene-level separation between training and test splits, so the protein-level homology issue described by Grimm et al. (Type II circularity) remains.
 
-Li \textit{et al.} developed MetaRNN \cite{li2022metarnn}, a
-recurrent neural network with gated recurrent units that integrates
-28 functional annotation scores together with a local sequence
-context window of $\pm$1 codon. Notably, MetaRNN explicitly avoids
-incorporating scores derived from ClinVar-trained tools -- such as
-MPC and ClinPred -- to circumvent what the authors term ``Type~I
-circularity'': the inflation of performance metrics when training
-and test variants overlap at the level of individual ClinVar
-submissions. This represents a meaningful methodological step
-forward. However, MetaRNN does not enforce gene-level isolation
-between training and test splits, leaving the protein-level
-homology contamination identified by Grimm \textit{et al.}
-\cite{grimm2015circularity} -- ``Type~II circularity'' -- unaddressed.
-
-While powerful at scale, these four proteome-wide tools share a
-common limitation: they are trained and evaluated without controls
-for gene-level homology leakage. For the specific challenge of
-sarcomeric HCM variant interpretation, where domain localisation
-and regulatory interface proximity carry outsized predictive weight,
-this proteome-wide generality is a structural disadvantage rather
-than a strength.
+Across all four tools we reviewed, the same core weakness stands out: none were designed with gene-held-out generalization in mind, and none encode the specific structural features---like domain membership, interface proximity, or mechanical coupling---that make sarcomere biology distinctive.
 
 \subsection{Disease-Specific Tools for Inherited Cardiac Conditions}
 
-The most direct predecessor to our work is CardioBoost
-\cite{zhang2021cardioboost}, a gradient-boosted ensemble classifier
-developed specifically for rare missense variants in genes associated
-with inherited cardiomyopathies and arrhythmias. Trained exclusively
-on variants with gnomAD allele frequency below 0.1\% -- a rarity
-filter that substantially reduces benign contamination -- CardioBoost
-demonstrated that disease-specific feature engineering and
-domain-constrained training data yield meaningful improvements over
-proteome-wide baselines, reporting an AUPRC of 91\% for
-cardiomyopathy variants on its internal test set. The tool is
-publicly available through the CardioClassifier platform and covers
-the primary sarcomeric HCM genes, though it does not include
-\textit{TNNC1} in its precomputed score set. Importantly,
-CardioBoost was developed and internally validated using random
-variant-level train-test splits rather than a gene-held-out
-strategy -- a distinction that, as we demonstrate in
-Section~\ref{sec:results}, has material implications for the
-reliability of reported performance estimates.
+CardioBoost \cite{zhang2021cardioboost} is the closest precedent to our work. It's a gradient-boosted classifier built specifically for rare missense variants in inherited cardiomyopathies and arrhythmias, using a gnomAD frequency cutoff of 0.1\% to minimize benign contamination. On its internal validation set, it reported an AUPRC of 91\% for cardiomyopathy variants---an impressive result. CardioBoost is available through the CardioClassifier web platform and covers most major sarcomeric HCM genes, though TNNC1 is missing from its precomputed scores.
+
+The main methodological issue is that CardioBoost validated performance using random variant-level train-test splits. As we show in Section \ref{sec:results}, this choice substantially overstates accuracy compared to gene-held-out evaluation.
 
 \subsection{Data Resources}
 
-The construction of a high-quality, leakage-free training dataset
-for HCM variant pathogenicity requires the integration of three
-complementary public resources: ClinVar \cite{landrum2016clinvar,
-landrum2018clinvar} for clinical variant labels, UniProt Swiss-Prot
-\cite{uniprot2023} for sequence and structural annotations, and the
-Genome Aggregation Database (gnomAD) \cite{karczewski2020} for
-population allele frequency data. The provenance, access method, and
-exact role of each resource in our data pipeline are described in
-detail in Section~\ref{sec:data}.
+Building a leakage-free HCM training set required pulling from three public repositories:
+\begin{itemize}
+    \item ClinVar \cite{landrum2016clinvar} for pathogenicity labels
+    \item UniProt Swiss-Prot \cite{uniprot2023} for structural and sequence annotations
+    \item gnomAD \cite{karczewski2020} for population allele frequencies
+\end{itemize}
+Section \ref{sec:data} describes the retrieval pipeline and how each resource feeds into the framework.
 
-\subsection{Machine Learning for Variant Pathogenicity and the
-Leakage Problem}
+\subsection{Machine Learning for Variant Pathogenicity and the Leakage Problem}
 
 \subsubsection{The Case for Disease-Specific Machine Learning}
+It's no surprise that CardioBoost outperforms proteome-wide tools on cardiac variants. Training on disease-relevant examples and engineering features that reflect the biology---like sarcomere domain boundaries, proximity to force-transmission interfaces, and cardiac-specific evolutionary patterns---captures signals that cross-gene averages simply miss. Proteome-wide models are powerful, but they're blunt instruments for targeted panel interpretation.
 
-The comparative performance of CardioBoost against proteome-wide
-baselines \cite{zhang2021cardioboost} established an important
-empirical principle: when training data, feature engineering, and
-model architecture are aligned with the specific disease context,
-classification performance on targeted gene panels consistently
-exceeds that of models trained on the full proteome. This advantage
-arises because disease-relevant structural features -- sarcomere
-domain membership, proximity to actin-binding or regulatory
-interfaces, conservation within a cardiac-specific evolutionary
-context -- are signals that a proteome-wide model can only approximate
-through averaged cross-gene statistics, but that a disease-specific
-model can encode directly.
-
-The advance of protein language models (PLMs) adds a complementary
-dimension to this argument. Lin \textit{et al.} demonstrated that
-ESM-2 \cite{lin2023esm2}, a transformer trained on hundreds of
-millions of protein sequences via masked language modelling, encodes
-structural and evolutionary constraints with sufficient fidelity to
-support atomic-level structure prediction from primary sequence
-alone -- without explicit multiple sequence alignment at inference
-time. These learned representations provide a continuous latent space
-in which the evolutionary fitness landscape of a protein family is
-implicitly encoded. A mutation-induced perturbation in this space,
-derived from a frozen ESM-2 model, therefore carries interpretable
-evolutionary signal without introducing any dependence on clinical
-labels -- a property we exploit directly in the Two-Tower model
-architecture described in Section~\ref{sec:data}.
+ESM-2 \cite{lin2023esm2} adds something genuinely new. It's a transformer trained on hundreds of millions of protein sequences via masked language modeling. Its representations carry rich structural and evolutionary information without requiring multiple sequence alignments at inference time. The key property we use is that mutations cause perturbations in ESM-2 embedding space that reflect evolutionary fitness cost---independent of clinical labels. This independence is crucial for avoiding leakage.
 
 \subsubsection{The Data Leakage Problem in Clinical Genomics}
+Leakage is common enough in ML-based science that it deserves careful attention here. In variant pathogenicity prediction, Grimm et al. identified two forms:
+\begin{itemize}
+    \item \textbf{Type I}: the same variant appears in both training and test sets
+    \item \textbf{Type II}: different variants from the same protein appear in both splits
+\end{itemize}
+Both inflate reported metrics and mask poor generalization.
 
-A critical and frequently underaddressed methodological issue in the
-development of variant pathogenicity predictors is data leakage
-\cite{kapoor2023leakage}. In the clinical genomics setting, leakage
-arises in two distinct forms. Grimm \textit{et al.}
-\cite{grimm2015circularity} provided a foundational analysis of
-both, identifying them as variant-level circularity (Type~I), in
-which the same variants appear in training and evaluation sets, and
-protein-level circularity (Type~II), in which variants from the same
-protein populate both partitions even if the specific variants
-differ. Grimm \textit{et al.} showed that failure to control for
-either type leads to systematically inflated performance estimates
-that do not reflect a model's ability to generalise to genuinely
-novel variants \cite{grimm2015circularity}.
-
-Feature-level leakage presents an orthogonal but equally serious
-challenge: if model inputs include population allele frequency
-annotations, prior clinical assertion counts, or ACMG evidence
-tags -- all co-derived from the same expert workflow that generates
-the training labels -- the model learns to recover the labelling
-process rather than the underlying molecular biology. We address
-both dimensions simultaneously: all ACMG-derivable fields are
-excluded from the feature set, and model evaluation is conducted
-under LOGO cross-validation which enforces complete gene-level
-separation between training and test data.
-
-
-% ==============================================================
-% SECTION III  --  DATASET CONSTRUCTION AND FEATURE ENGINEERING
-% (III-A, III-B verbatim from Part1.tex; III-C onward new)
-% ==============================================================
+Feature leakage is another issue. If input features include population allele frequencies, ACMG classification fields, or clinical assertion counts, the model can end up learning the curation process rather than the biology. We address both dimensions at once: all ACMG-derivable features are excluded from our input vectors, and model evaluation uses LOGO cross-validation to enforce complete gene-level separation.
 
 % ==============================================================
 % SECTION III  --  PROPOSED METHODOLOGY
@@ -442,61 +195,18 @@ separation between training and test data.
 \section{Proposed Methodology}
 \label{sec:methodology}
 
-Our methodology is designed to process multiple biological modalities while strictly avoiding the data leakage mechanisms that confound existing predictors. The architecture of our approach consists of robust data curation, zero-leakage feature extraction, a dual-model predictive framework, and a mechanistic interpretability layer.
-
 \subsection{Data Curation and Problem Formulation}
+\label{sec:data}
 
-To build a high-quality, zero-leakage training corpus, we established a rigorous data collection pipeline that spans clinical and functional annotations.
+We built the training dataset by aggregating and filtering clinical and functional annotations from three public repositories:
+\begin{itemize}
+    \item \textbf{ClinVar} provided all clinical pathogenicity labels. We restricted training to variants with a two-star or higher review status, meaning at least two independent submitters agreed on the classification. The ClinVar VUS set across our nine-gene panel became the inference cohort.
+    \item \textbf{UniProt Swiss-Prot} supplied manually curated structural and sequence annotations for the nine proteins: canonical sequences, domain boundaries, secondary structure assignments (helix, strand, coil), disordered regions, binding sites, post-translational modifications, and active sites. Both UniProt and ClinVar data were retrieved programmatically through the EBI Proteins API.
+    \item \textbf{gnomAD} was used to populate the benign class. Variants with a global allele frequency above 0.1\% were treated as benign proxies, counteracting the pathogenic-heavy reporting bias in ClinVar.
+\end{itemize}
 
-\vspace{2mm}\noindent\textbf{Data Sources.} 
-
-The construction of the training dataset integrates three
-complementary public resources, each contributing a distinct and
-non-overlapping layer of evidence to the final variant
-representation.
-
-\textbf{ClinVar} \cite{landrum2016clinvar, landrum2018clinvar} is
-the primary public archive for clinical interpretations of human
-genetic variants, aggregating submissions from clinical testing
-laboratories, research groups, and expert panels worldwide. Variants
-in ClinVar are classified under the five-tier ACMG/AMP scheme, and
-a review status field reflects the number and concordance of
-independent submissions. For this study, only variants carrying a
-two-star or higher review status -- indicating multi-submitter
-consensus -- are admitted to the labelled training set. ClinVar also
-contains the VUS records that constitute the applied target of this
-work: the 4,500+ variants in our nine-gene panel whose clinical
-resolution is the direct output objective of the deployed model.
-
-\textbf{UniProt Swiss-Prot} \cite{uniprot2023} provides manually
-curated annotations for each of the nine sarcomeric proteins in our
-panel, including canonical amino acid sequences, domain boundary
-coordinates, secondary structure element assignments (helix, strand,
-coil), intrinsically disordered regions, binding site residues,
-post-translational modification (PTM) sites, and active site flags.
-UniProt and ClinVar data were accessed simultaneously via the
-\textbf{EBI Proteins API}, a unified programmatic interface enabling
-joint querying of both resources within a single data collection
-pipeline.
-
-\textbf{gnomAD} \cite{karczewski2020} aggregates whole-exome and
-whole-genome sequencing data from approximately 730,000 individuals
-across diverse ancestral backgrounds, providing allele frequency
-estimates for the vast majority of observed human variants. In our
-pipeline, variants with gnomAD allele frequency $> 0.1\%$ serve as
-high-confidence benign proxies, addressing the well-documented
-ascertainment bias in ClinVar toward pathogenic submissions and
-ensuring that the benign class in the training set is credibly
-populated rather than artificially sparse.
-
-\vspace{2mm}\noindent\textbf{Dataset Statistics and Cohort Description.} 
-
-The labeled dataset comprises \textbf{1,954 missense variants}
-across nine sarcomeric genes: \textbf{1,441 pathogenic} (73.7\%)
-and \textbf{513 benign} (26.3\%). The broader inference cohort spans
-\textbf{8,137 variants} across the same genes, including
-\textbf{4,524 VUS} targeted for probabilistic re-stratification.
-Table~\ref{tab:cohort} summarises the per-gene composition.
+\vspace{2mm}\noindent\textbf{Dataset Statistics.}
+The labeled training set contains 1,954 missense variants---1,441 pathogenic (73.7\%) and 513 benign (26.3\%)---across the nine sarcomeric genes. The inference cohort has 8,137 variants total, of which 4,524 are VUS. Per-gene counts are shown in Table \ref{tab:cohort}.
 
 \begin{table}[h]
 \centering
@@ -506,122 +216,62 @@ Table~\ref{tab:cohort} summarises the per-gene composition.
 \toprule
 \textbf{Gene} & \textbf{Protein} & \textbf{UniProt} & $N_{\mathrm{labeled}}$ \\
 \midrule
-\textit{MYH7}   & $\beta$-MHC       & P12883 & 986 \\
-\textit{MYBPC3} & cMyBP-C          & Q14896 & 429 \\
-\textit{TNNT2}  & Troponin T2      & P45379 & 130 \\
-\textit{TNNI3}  & Troponin I3      & P19429 & 118 \\
-\textit{TPM1}   & $\alpha$-Tropomyosin & P09493 & 100 \\
-\textit{ACTC1}  & Cardiac Actin    & P68032 &  64 \\
-\textit{MYL2}   & Regulatory MLC   & P10916 &  54 \\
-\textit{MYL3}   & Essential MLC    & P08590 &  37 \\
-\textit{TNNC1}  & Troponin C1      & P63316 &  36 \\
+\textit{MYH7}   & $\beta$-MHC           & P12883 & 986 \\
+\textit{MYBPC3} & cMyBP-C               & Q14896 & 429 \\
+\textit{TNNT2}  & Troponin T2           & P45379 & 130 \\
+\textit{TNNI3}  & Troponin I3           & P19429 & 118 \\
+\textit{TPM1}   & $\alpha$-Tropomyosin  & P09493 & 100 \\
+\textit{ACTC1}  & Cardiac Actin         & P68032 &  64 \\
+\textit{MYL2}   & Regulatory MLC        & P10916 &  54 \\
+\textit{MYL3}   & Essential MLC         & P08590 &  37 \\
+\textit{TNNC1}  & Troponin C1           & P63316 &  36 \\
 \midrule
-\textbf{Total}  &                  &        & \textbf{1,954} \\
+\textbf{Total}  &                       &        & \textbf{1,954} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-
 \subsection{Feature Engineering and Embeddings}
 
-To capture both the biophysical properties of the mutated residue and the broader evolutionary constraint on the protein, we engineered two distinct feature sets.
+We built two feature sets: one capturing local biophysical properties of each substitution, and one capturing evolutionary context from a protein language model.
 
-\vspace{2mm}\noindent\textbf{Zero-Leakage Protocol.} 
+\vspace{2mm}\noindent\textbf{Leakage Prevention.}
+Six columns were excluded from the feature matrix before modeling: \texttt{pop\_freq}, \texttt{clin\_sig}, \texttt{review\_status}, \texttt{disease}, \texttt{sources}, and \texttt{genomic\_loc}. These fields either encode ACMG/AMP criteria directly or are co-derived from the same clinical workflows that produced the training labels. Keeping them would risk teaching the model database patterns instead of molecular biology. After exclusion, the tabular feature vector is a 51-dimensional mix of numeric and boolean values.
 
-To eliminate feature-level label circularity, the following
-columns are removed from the feature matrix before model training:
-\texttt{pop\_freq}, \texttt{clin\_sig}, \texttt{review\_status},
-\texttt{disease}, \texttt{sources}, and \texttt{genomic\_loc}.
-Each field either directly encodes an ACMG/AMP classification criterion
-or serves as a strong proxy for the clinical adjudication workflow that
-generated the training labels. Their retention would allow a model to
-reconstruct database consensus rather than learn intrinsic molecular
-pathology. The remaining numeric and boolean features constitute the
-51-dimensional tabular input to both classifiers.
-
-\vspace{2mm}\noindent\textbf{The 51 Biophysical Descriptors.} 
-
-The tabular feature vector $\xtab_i \in \mathbb{R}^{51}$ is derived
-from UniProt structural annotations and encodes the local
-biophysical microenvironment of each substitution across five
-semantic groups:
-
+\vspace{2mm}\noindent\textbf{Biophysical Descriptors.}
+Each variant is described by a 51-dimensional vector, organized into five groups:
 \begin{itemize}
-  \item \textbf{Physicochemical substitution cost.} The Grantham
-    distance \cite{ng2003sift} between the wild-type and mutant amino
-    acids captures multi-dimensional biochemical dissimilarity
-    (composition $c$, polarity $p$, molecular volume $v$):
-
-  \item \textbf{Charge and size perturbations.} Wild-type and mutant
-    residue charge classes ($\in \{-1, 0, +1\}$) and size classes
-    ($\in \{1,2,3\}$) are encoded, together with their signed deltas
-    $\Delta\mathrm{charge}$ and $\Delta\mathrm{size}$.
-  \item \textbf{Domain-level context.} Boolean flags indicate whether
-    the mutated position resides within a motor domain, coiled-coil
-    segment, regulatory zone, or other annotated structural region of
-    the respective sarcomeric protein.
-  \item \textbf{Critical site markers.} Separate binary features encode
-    proximity to ligand-binding sites, metal-binding sites, active
-    sites, phosphorylation / PTM sites, and secondary structure
-    contexts (alpha-helix, beta-strand, coil).
-  \item \textbf{Relative position.} The normalised residue position
-    $\rho_i = \mathrm{pos}_i / L_{\mathrm{protein}}$ encodes depth
-    within the polypeptide chain.
+    \item \textbf{Physicochemical distance:} Grantham distance between wild-type and mutant residues, based on composition, polarity, and molecular volume.
+    \item \textbf{Charge and size alterations:} Explicit encoding of wild-type and mutant charge classes ($-1, 0, +1$) and size classes ($1, 2, 3$), plus signed deltas ($\Delta\mathrm{charge}$, $\Delta\mathrm{size}$).
+    \item \textbf{Domain-level context:} Flags for whether the mutation falls in a motor domain, coiled-coil segment, regulatory zone, or other annotated functional region.
+    \item \textbf{Functional site proximity:} Indicators for proximity to active sites, ligand-binding sites, metal-binding sites, phosphorylation targets, and local secondary structure type (helix, strand, coil).
+    \item \textbf{Relative position:} Normalized sequence coordinate ($\rho = \mathrm{position} / \mathrm{protein length}$).
 \end{itemize}
 
-Missing tabular values (resulting from partial UniProt annotation
-coverage) are imputed to zero, a conservative choice consistent with
-the reproducible implementation.
+Where UniProt annotations were missing, we imputed zeros---a conservative choice that avoids over-interpreting unannotated regions.
 
-\vspace{2mm}\noindent\textbf{Differential ESM-2 Embeddings.} 
-
-A core input to the Two-Tower model is the \textit{differential
-evolutionary embedding} $\Deltaemb_i$ derived from a frozen instance
-of ESM-2 \cite{lin2023esm2} (variant \texttt{esm2\_t33\_650M\_UR50D},
-$33$ Transformer layers, $650\,\mathrm{M}$ parameters). For each
-missense variant~$i$, the wild-type sequence context $s_i^{\mathrm{WT}}$
-and mutant sequence context $s_i^{\mathrm{MUT}}$ are independently
-encoded by the frozen encoder $f_\theta$. Mean pooling over the
-sequence length dimension yields 1,280-dimensional protein-level
-representations:
+\vspace{2mm}\noindent\textbf{Differential ESM-2 Embeddings.}
+To bring in evolutionary context, we extracted a differential embedding $\Deltaemb_i$ from a frozen ESM-2 model \cite{lin2023esm2} (\texttt{esm2\_t33\_650M\_UR50D}, 33 Transformer layers). For each variant, we ran both the wild-type and mutant sequences through the frozen encoder $f_\theta$, then mean-pooled across positions:
 \begin{equation}
   \mathbf{e}_i^{\mathrm{WT}}  = \mathrm{MeanPool}\bigl(f_\theta(s_i^{\mathrm{WT}})\bigr),\quad
   \mathbf{e}_i^{\mathrm{MUT}} = \mathrm{MeanPool}\bigl(f_\theta(s_i^{\mathrm{MUT}})\bigr).
 \end{equation}
-The mutation-induced perturbation vector is then
+The mutation perturbation vector is simply the difference:
 \begin{equation}
-  \Deltaemb_i = \mathbf{e}_i^{\mathrm{MUT}} - \mathbf{e}_i^{\mathrm{WT}}
-  \;\in\;\mathbb{R}^{1280}.
+  \Deltaemb_i = \mathbf{e}_i^{\mathrm{MUT}} - \mathbf{e}_i^{\mathrm{WT}} \;\in\;\mathbb{R}^{1280}.
   \label{eq:delta_emb}
 \end{equation}
-Subtracting the wild-type embedding attenuates protein-family
-background signal and isolates the mutation-local shift in
-evolutionary latent space \cite{frazer2021eve}. Because ESM-2
-parameters remain strictly frozen throughout training, the embeddings
-carry no statistical dependence on the clinical labels used to
-supervise the downstream classifier, preserving the zero-leakage
-guarantee. Pre-computed embeddings for all 1,954 labelled variants
-are stored in \texttt{data/esm2\_delta\_embeddings.npy}
-($1954 \times 1280$ float32 array).
+Subtracting the wild-type representation removes the background signal shared across the protein family, leaving only the shift attributable to the specific mutation \cite{frazer2021eve}. Freezing the ESM-2 weights ensures these embeddings are statistically independent of our clinical training labels. All 1,954 precomputed embeddings are stored as a $1954 \times 1280$ float32 array in \texttt{data/esm2\_delta\_embeddings.npy}.
 
 \subsection{Two-Tower Hybrid Neural Network}
 
-Our primary predictive engine is a custom dual-input architecture designed to fuse tabular biophysical descriptors with high-dimensional language model embeddings. By processing these two distinct modalities through dedicated projection pathways before integrating them, the network preserves the unique structural constraints of the sarcomere while simultaneously leveraging the rich evolutionary context encoded by the protein language model. This late-fusion strategy prevents early information bottlenecking and allows both domains to contribute optimally to the final pathogenicity score.
+We designed a dual-input network to combine tabular biophysical descriptors with high-dimensional ESM-2 embeddings. Rather than flattening both inputs into a single vector, we route them through separate projection layers first---a late-fusion design that lets each modality contribute independently before the final prediction.
 
-\vspace{2mm}\noindent\textbf{Architecture Overview.} 
+\vspace{2mm}\noindent\textbf{Architecture Overview.}
+The \textsc{HybridHCMModel} has two parallel linear projection pathways (``towers''), one per input type. Both towers output to a shared hidden dimension $h = 32$, and their outputs are concatenated and passed through a prediction head. Dropout ($p_\mathrm{drop} = 0.3$) is applied after every activation.
 
-The \textsc{HybridHCMModel} is a custom two-input neural network
-that processes the tabular biophysical descriptor vector and the
-ESM-2 differential embedding through two independent linear
-projections (``towers''), concatenates the resulting representations,
-and passes the fused vector through a shared prediction head.
-All layers use hidden width $h = 32$ and apply dropout at rate
-$p_\mathrm{drop} = 0.3$ after each activation.
-
-\vspace{2mm}\noindent\textbf{Tabular Feature Tower.} 
-
-For variant $i$, the tabular input $\xtab_i \in \mathbb{R}^{d_\mathrm{tab}}$
-($d_\mathrm{tab}=51$) is transformed by
+\vspace{2mm}\noindent\textbf{Tabular Feature Tower.}
+The tabular vector $\xtab_i \in \mathbb{R}^{51}$ is projected via:
 \begin{equation}
   \ztab_i = \mathrm{Dropout}\!\left(
       \mathrm{BN}\!\left(
@@ -630,15 +280,10 @@ For variant $i$, the tabular input $\xtab_i \in \mathbb{R}^{d_\mathrm{tab}}$
     \right),
   \label{eq:tab_tower}
 \end{equation}
-where $W_\mathrm{tab}\in\mathbb{R}^{h\times d_\mathrm{tab}}$,
-$\mathbf{b}_\mathrm{tab}\in\mathbb{R}^h$, and BN denotes batch
-normalisation with learnable scale and shift parameters.
+where $W_\mathrm{tab}\in\mathbb{R}^{h\times 51}$, $\mathbf{b}_\mathrm{tab}\in\mathbb{R}^h$, and BN is batch normalization with learnable scale and shift.
 
-\vspace{2mm}\noindent\textbf{ESM-2 Embedding Tower.} 
-
-The differential embedding $\xesm_i = \Deltaemb_i \in \mathbb{R}^{1280}$
-(Eq.~\ref{eq:delta_emb}) passes through an identically structured
-projection:
+\vspace{2mm}\noindent\textbf{ESM-2 Embedding Tower.}
+The differential embedding $\xesm_i = \Deltaemb_i \in \mathbb{R}^{1280}$ passes through an identical projection:
 \begin{equation}
   \zesm_i = \mathrm{Dropout}\!\left(
       \mathrm{BN}\!\left(
@@ -647,35 +292,20 @@ projection:
     \right),
   \label{eq:esm_tower}
 \end{equation}
-where $W_\mathrm{esm}\in\mathbb{R}^{h\times 1280}$ and
-$\mathbf{b}_\mathrm{esm}\in\mathbb{R}^h$.
+where $W_\mathrm{esm}\in\mathbb{R}^{h\times 1280}$.
 
-\vspace{2mm}\noindent\textbf{Fusion and Output Head.} 
-
-The two tower representations are concatenated along the feature
-dimension to form the fused representation
-$\zfus_i = [\ztab_i\,;\,\zesm_i] \in \mathbb{R}^{2h}$.
-The prediction head applies a further linear projection with
-batch normalisation, dropout, and a final scalar projection through
-a sigmoid activation:
+\vspace{2mm}\noindent\textbf{Fusion and Output Head.}
+The two tower outputs are concatenated: $\zfus_i = [\ztab_i\,;\,\zesm_i] \in \mathbb{R}^{2h}$. A final linear block with batch normalization and dropout produces a scalar pathogenicity estimate:
 \begin{align}
-  \mathbf{h}_i        &= \mathrm{Dropout}\!\left(\mathrm{BN}\!\left(\mathrm{ReLU}(W_f\,\zfus_i + \mathbf{b}_f)\right)\right),
-                         \quad W_f\in\mathbb{R}^{h\times 2h}, \label{eq:fusion}\\
-  \hat{p}_i^{\,\mathrm{unc}}  &= \sigma\!\left(w_o^\top\mathbf{h}_i + b_o\right),
-                         \quad w_o\in\mathbb{R}^h, \label{eq:output}
+  \mathbf{h}_i &= \mathrm{Dropout}\!\left(\mathrm{BN}\!\left(\mathrm{ReLU}(W_f\,\zfus_i + \mathbf{b}_f)\right)\right),
+                  \quad W_f\in\mathbb{R}^{h\times 2h}, \label{eq:fusion}\\
+  \hat{p}_i^{\,\mathrm{unc}} &= \sigma\!\left(w_o^\top\mathbf{h}_i + b_o\right),
+                  \quad w_o\in\mathbb{R}^h, \label{eq:output}
 \end{align}
-where $\sigma(x)=(1+e^{-x})^{-1}$ is the logistic sigmoid. The
-uncalibrated output $\hat{p}_i^{\,\mathrm{unc}}\in(0,1)$ is an
-initial pathogenicity probability estimate that is subsequently
-refined by Platt scaling (Section~\ref{sec:platt}).
+with $\sigma(x)=(1+e^{-x})^{-1}$. The uncalibrated output is subsequently corrected with Platt scaling (Section~\ref{sec:platt}).
 
-\vspace{2mm}\noindent\textbf{Class-Balanced Binary Cross-Entropy Loss.} 
-
-The labeled training set contains 1,441 pathogenic and 513 benign
-variants, yielding a 2.8:1 positive-to-negative ratio. To prevent
-the network from deferring to the majority class, per-sample
-inverse-frequency weights are computed from the training split
-$\{y_i\}_{i\in\mathcal{D}_\mathrm{train}}$:
+\vspace{2mm}\noindent\textbf{Class-Balanced Binary Cross-Entropy Loss.}
+With 1,441 pathogenic and 513 benign variants (roughly 2.8:1), we weight samples inversely by class frequency:
 \begin{equation}
   w_i = \begin{cases}
     \dfrac{N}{2N_1} & \text{if } y_i = 1,\\[6pt]
@@ -683,139 +313,64 @@ $\{y_i\}_{i\in\mathcal{D}_\mathrm{train}}$:
   \end{cases}
   \label{eq:weights}
 \end{equation}
-where $N = N_1 + N_0$ is the total training-set size. The weighted
-Binary Cross-Entropy (BCE) objective is
+giving a weighted BCE objective:
 \begin{equation}
   \mathcal{L}_\mathrm{BCE} = -\frac{1}{N}\sum_{i=1}^{N}
     w_i\!\left[y_i \log \hat{p}_i^{\,\mathrm{unc}} +
     (1-y_i)\log(1-\hat{p}_i^{\,\mathrm{unc}})\right].
   \label{eq:bce}
 \end{equation}
-The network is optimised with AdamW \cite{loshchilov2019adamw}
-(learning rate $\eta=0.003$, weight-decay $\lambda=10^{-4}$) for
-$T=40$ epochs with full-batch gradient computation.
+We used AdamW \cite{loshchilov2019adamw} with $\eta=0.003$ and weight decay $\lambda=10^{-4}$, training for $T=40$ epochs on the full training batch.
 
 \subsection{Baseline Random Forest Classifier}
 
-To establish a strong traditional baseline against our neural architecture and to evaluate the necessity of cross-modal fusion, we train an ensemble decision tree classifier.
+We included a Random Forest \cite{breiman2001rf} to establish whether a simpler ensemble model can make good use of the ESM-2 embeddings without a specialized fusion architecture. This also gives us a cleaner comparison point for interpreting what the neural network's two-tower design actually adds.
 
-\vspace{2mm}\noindent\textbf{Ensemble Formulation.} 
-
-To establish a strong traditional baseline, we train a Random Forest
-classifier \cite{breiman2001rf}. Unlike the Two-Tower model, which
-processes each modality through a dedicated projection, the Random
-Forest receives the \emph{concatenated} representation
+\vspace{2mm}\noindent\textbf{Ensemble Formulation.}
+The forest has $B=200$ CART trees. Unlike the neural network, the RF takes a single flat input formed by concatenating both feature types:
 \begin{equation}
   \mathbf{x}_i^{\mathrm{RF}} = \bigl[\xtab_i\,;\,\xesm_i\bigr]
-    \in \mathbb{R}^{d_\mathrm{tab}+1280},
+    \in \mathbb{R}^{51+1280}.
   \label{eq:rf_input}
 \end{equation}
-treating the combined feature space as a flat input to an ensemble
-of $B=200$ Classification and Regression Trees (CARTs).
 
-\vspace{2mm}\noindent\textbf{Node Split Criterion: Gini Impurity.} 
-
-At each internal node $t$ during tree induction, the optimal split
-is selected by maximising the reduction in \emph{Gini impurity}:
+\vspace{2mm}\noindent\textbf{Node Split Criterion: Gini Impurity.}
+Splits are chosen by maximizing the reduction in Gini impurity:
 \begin{equation}
   I_G(t) = 1 - \sum_{k\in\{0,1\}} \hat{p}(k|t)^2,
   \label{eq:gini}
 \end{equation}
-where $\hat{p}(k|t)$ is the empirical proportion of class-$k$
-instances at node $t$. The split that produces the largest weighted
-reduction
 \begin{equation}
-  \Delta I_G = I_G(t) - \frac{n_L}{n}I_G(t_L) - \frac{n_R}{n}I_G(t_R)
+  \Delta I_G = I_G(t) - \frac{n_L}{n}I_G(t_L) - \frac{n_R}{n}I_G(t_R).
 \end{equation}
-is selected, where $t_L, t_R$ are the left and right child nodes
-containing $n_L$ and $n_R$ samples, respectively. Tree depth is
-capped at $\mathrm{max\_depth}=10$ to control variance.
+Tree depth is capped at $\mathrm{max\_depth}=10$.
 
-\vspace{2mm}\noindent\textbf{Class-Balanced Bootstrap Sampling.} 
-
-To address label imbalance within each bootstrap sample, class-weight
-balanced sampling is used: effective sample weights are inversely
-proportional to class frequencies in each bootstrap draw. The
-aggregated probability estimate across the ensemble is
+\vspace{2mm}\noindent\textbf{Class-Balanced Bootstrap Sampling.}
+Bootstrap draws are reweighted by inverse class frequency to handle the imbalance. The ensemble prediction averages class-1 probabilities across all trees:
 \begin{equation}
-  \hat{p}_i^{\,\mathrm{RF}} = \frac{1}{B}\sum_{b=1}^{B} T_b\!\left(\mathbf{x}_i^{\mathrm{RF}}\right),
+  \hat{p}_i^{\,\mathrm{RF}} = \frac{1}{B}\sum_{b=1}^{B} T_b\!\left(\mathbf{x}_i^{\mathrm{RF}}\right).
   \label{eq:rf_pred}
 \end{equation}
-where $T_b(\cdot)$ returns the class-1 probability from tree $b$.
 
-\vspace{2mm}\noindent\textbf{Purpose of the Baseline.} 
-
-The Baseline RF answers a specific scientific question: can a
-traditional ensemble model fully exploit the high-dimensional ESM-2
-evolutionary signal through simple concatenation and axis-aligned
-splits, without specialised cross-modal fusion? Comparing its
-performance against the Two-Tower model in identical LOGO conditions
-isolates the incremental value of learned multi-modal integration
-over bag-of-features treatment of the same information.
-
-
-% ==============================================================
-% SECTION VI  --  EXPLAINABLE AI VIA IN SILICO MUTAGENESIS
-% ==============================================================
 \subsection{Explainability via \textit{In Silico} Mutagenesis}
 
-Pointwise prediction without mechanistic interpretability is insufficient for clinical deployment. To expose the biochemical logic encoded by each model, we deploy an \textit{in silico} mutagenesis framework.
+These raw pathogenicity scores are not enough for the researchers to make any conclusions or to understand why a variant scored the way it did. This is why we used \textit{In Silico} Mutagenesis (ISM) heatmaps analysis that scores all possible single-amino-acid substitutions within a target sequence window. 
 
-\vspace{2mm}\noindent\textbf{ISM Landscape Generation.} 
-
-Pointwise prediction without mechanistic interpretability is
-insufficient for clinical deployment. To expose the biochemical
-logic encoded by each model, we generate \textit{in silico}
-mutagenesis (ISM) landscapes: comprehensive maps of predicted
-pathogenicity across all possible single-amino-acid substitutions
-in a target sequence segment.
-
-For a gene-representative sequence window of length $L$ and
-canonical amino-acid alphabet $\mathcal{A}$ ($|\mathcal{A}|=20$),
-we systematically construct mutant contexts
-$s^{(j,a)}$ for each position $j\in\{1,\ldots,L\}$ and alternative
-amino acid $a\in\mathcal{A}$. For each such mutant context, we:
+\vspace{2mm}\noindent\textbf{ISM Landscape Generation.}
+For a window of length $L$ and the 20-amino-acid alphabet $\mathcal{A}$, we generate variant contexts $s^{(j,a)}$ for every position $j$ and every alternative amino acid $a$. For each:
 \begin{enumerate}
-  \item Compute the differential ESM-2 embedding
-    $\Deltaemb^{(j,a)} = f_\theta(s^{(j,a)})_j - f_\theta(s^{\mathrm{WT}})_j \in \mathbb{R}^{1280}$.
-  \item Update the tabular descriptor vector to reflect the physical
-    properties of substitution $(a_j \to a)$: Grantham distance,
-    charge delta, size delta, and local chemical context.
-  \item Forward-pass the updated $(\mathbf{x}^{\mathrm{tab},(j,a)},\,\Deltaemb^{(j,a)})$
-    through the calibrated Two-Tower predictor (or Baseline RF).
+  \item Compute $\Deltaemb^{(j,a)} = f_\theta(s^{(j,a)})_j - f_\theta(s^{\mathrm{WT}})_j \in \mathbb{R}^{1280}$.
+  \item Update the tabular descriptor to reflect the new substitution (Grantham distance, charge and size deltas, binding site flags, etc.).
+  \item Run the updated pair $(\xtab^{(j,a)}, \Deltaemb^{(j,a)})$ through the calibrated model. This produces an ISM matrix $M \in [0, 1]^{20\times L}$:
+  \begin{equation}
+    M_{a,j} = \hat{p}^{\,\mathrm{cal}}\!\left(\xtab^{(j,a)}, \Deltaemb^{(j,a)}\right).
+    \label{eq:ism_matrix}
+  \end{equation}
 \end{enumerate}
-This yields the ISM matrix $M \in [0,1]^{20 \times L}$:
-\begin{equation}
-  M_{a,j} = \hat{p}^{\,\mathrm{cal}}\!\left(\mathbf{x}^{\mathrm{tab},(j,a)},\,
-      \Deltaemb^{(j,a)}\right),
-  \label{eq:ism_matrix}
-\end{equation}
-with the wild-type diagonal $M_{a_j, j}$ serving as the positional
-baseline.
+The wild-type entry at each column serves as the local reference. 
 
-\vspace{2mm}\noindent\textbf{Heatmap Visualisation and Biomechanical Mapping.} 
-
-The ISM matrix is visualised as a \textit{coolwarm} heatmap
-(rows: 20 amino acids; columns: residue positions), where warm
-colours indicate high predicted pathogenicity and cool colours
-indicate predicted benignity. Vertical hot-spots -- residue positions
-where nearly every substitution is predicted damaging -- identify
-structurally intolerant positions. Horizontal stripes of warmth
-reveal substitution classes (e.g. charge-reversing or steric-clashing)
-that are universally destabilising.
-
-Crucially, ISM landscapes are generated from a model trained
-\emph{without} any explicit 3-D structural input. The emergence of
-coherent spatial patterns that align with known sarcomeric structural
-biology therefore constitutes evidence that the combined
-ESM-2~+~biophysical representation has learned meaningful
-sequence-structure-function relationships. Mapping ISM hot-spots
-against UniProt domain annotations allows us to correlate high
-predicted pathogenicity with known functional interfaces (e.g.\ the
-myosin converter domain, actin-binding cleft, or troponin regulatory
-interface), providing biologically interpretable hypotheses for
-prioritisation of functional validation experiments.
-
+\vspace{2mm}\noindent\textbf{Biomechanical mapping and heatmap visualisation.}
+We show $M$ as a coolwarm heatmap with amino acids on rows and positions on columns. Vertical stripes of uniformly high pathogenicity indicate positions where almost any substitution is disruptive---structural bottlenecks. Horizontal bands represent substitution classes (charge reversals, large hydrophobic insertions) that are broadly destabilising regardless of position.
 
 % ==============================================================
 % SECTION IV  --  EXPERIMENTAL DESIGN AND EVALUATION
@@ -823,80 +378,48 @@ prioritisation of functional validation experiments.
 \section{Experimental Design and Evaluation}
 \label{sec:experimental_setup}
 
-To rigorously assess model performance and avoid data leakage, we utilize the following evaluation protocols and metrics.
-
-\vspace{2mm}\noindent\textbf{Leave-One-Gene-Out Validation Protocol.} 
-
-To prevent Type-II homology leakage \cite{grimm2015circularity},
-model evaluation is conducted under Leave-One-Gene-Out (LOGO)
-cross-validation. For the nine-gene target set
-$\mathcal{G} = \{\textit{MYH7},\,\textit{MYBPC3},\,\textit{TNNT2},\dots\}$
-and held-out gene $g^* \in \mathcal{G}$:
+\vspace{2mm}\noindent\textbf{Leave-One-Gene-Out Validation Protocol.}
+We prevent Type-II homology leakage \cite{grimm2015circularity} by iteratively holding out every variant from one gene $g^* \in \mathcal{G}$ for testing:
 \begin{align}
   \mathcal{D}_\mathrm{train} &= \bigl\{(\mathbf{x}_i,\,y_i) : g_i \neq g^*\bigr\}, \\
   \mathcal{D}_\mathrm{test}  &= \bigl\{(\mathbf{x}_i,\,y_i) : g_i  =  g^*\bigr\}.
 \end{align}
-This procedure is repeated nine times, each time holding out a
-different gene, so that every variant in the dataset is predicted
-exactly once by a model that has never seen another variant from the
-same protein family.
+This repeats nine times, so every variant is test data exactly once, evaluated by a model that has never seen its gene family.
 
-\vspace{2mm}\noindent\textbf{Bootstrap Confidence Intervals.} 
-
-Point estimates of the Area Under the Precision-Recall Curve (AUPRC)
-are supplemented by nonparametric 95\% bootstrap confidence intervals.
-For $B = 100$ resampling rounds on the LOGO test set
-$\{(y_i, \phat_i)\}_{i=1}^n$:
+\vspace{2mm}\noindent\textbf{Bootstrap Confidence Intervals.}
+We add 95\% nonparametric confidence intervals to AUPRC estimates via $B = 100$ bootstrap resamples:
 \begin{equation}
   \overline{\mathrm{AUPRC}} = \frac{1}{|\mathcal{B}|}\sum_{b\in\mathcal{B}}\mathrm{AUPRC}^{(b)}, \quad
   \mathrm{CI}_{95\%} = \bigl[Q_{2.5},\,Q_{97.5}\bigr].
 \end{equation}
-Bootstrapped samples containing fewer than two distinct classes are
-discarded, consistent with the implementation safeguard.
+Resamples with fewer than two distinct classes are excluded for numerical stability.
 
-\vspace{2mm}\noindent\textbf{Probability Calibration via Platt Scaling.}\label{sec:platt} 
-
-Neural sigmoid outputs may be systematically over- or under-confident,
-particularly when trained with class-reweighted objectives. For
-clinical decision support, predictions must represent calibrated
-probabilities. We apply Platt scaling: a univariate logistic
-regression $\mathcal{C}$ is fitted on the \emph{in-fold} training
-predictions $\hat{p}_i^{\,\mathrm{unc}}$ (clipped to
-$[10^{-7},1-10^{-7}]$ for numerical stability) to learn scalar
-parameters $A,B \in \mathbb{R}$:
+\vspace{2mm}\noindent\textbf{Probability Calibration via Platt Scaling.}\label{sec:platt}
+Neural networks trained with class-reweighted objectives tend to produce poorly calibrated probabilities. We fit a univariate logistic regression $\mathcal{C}$ to the in-fold training predictions $\hat{p}_i^{\,\mathrm{unc}}$ (clipped to $[10^{-7}, 1-10^{-7}]$):
 \begin{equation}
-  \hat{p}_i^{\,\mathrm{cal}} = \mathcal{C}\!\left(\hat{p}_i^{\,\mathrm{unc}}\right)
-    = \sigma\!\left(A\cdot\hat{p}_i^{\,\mathrm{unc}} + B\right).
+  \hat{p}_i^{\,\mathrm{cal}} = \mathcal{C}\!\left(\hat{p}_i^{\,\mathrm{unc}}\right) = \sigma\!\left(A\cdot\hat{p}_i^{\,\mathrm{unc}} + B\right),
   \label{eq:platt}
 \end{equation}
-Parameters are estimated by maximum likelihood with a large
-regularisation constant ($C=999$) to prevent shrinkage.
-Calibration quality is quantified by the Brier score,
+using high inverse-regularization ($C=999$) to avoid over-shrinking. We measure calibration quality with the Brier score:
 \begin{equation}
   \mathrm{BS} = \frac{1}{n}\sum_{i=1}^{n}(\hat{p}_i^{\,\mathrm{cal}} - y_i)^2,
   \label{eq:brier}
 \end{equation}
-and the Expected Calibration Error (ECE), computed as the
-sample-weighted mean absolute deviation between bin-wise mean
-predicted probabilities and bin-wise observed positive fractions
-across ten equal-width probability bins.
+and the Expected Calibration Error (ECE), computed as the sample-weighted mean absolute deviation between predicted probability and empirical positive rate across ten equal-width bins.
 
-
+% ==============================================================
+% SECTION V  --  RESULTS
+% ==============================================================
 \section{Results}
 \label{sec:results}
 
 \subsection{Internal LOGO Validation: Two-Tower vs.\ Baseline RF}
 
-Table~\ref{tab:logo} reports AUPRC, 95\% bootstrap confidence
-intervals, Brier score, and Expected Calibration Error for both
-models across all nine genes. 
+Table~\ref{tab:logo} shows discrimination and calibration results for both models across all nine held-out genes.
 
 \begin{table*}[t]
 \centering
-\caption{Leave-One-Gene-Out Cross-Validation Performance:
-  Two-Tower Hybrid vs.\ Baseline Random Forest.
-  AUPRC and its 95\% bootstrap CI are the primary discrimination
-  metrics; Brier and ECE quantify probabilistic calibration.}
+\caption{Leave-One-Gene-Out Cross-Validation Performance: Two-Tower Hybrid vs.\ Baseline Random Forest. AUPRC and its 95\% bootstrap CI serve as the primary discrimination metrics; Brier score and ECE quantify probabilistic calibration.}
 \label{tab:logo}
 \setlength{\tabcolsep}{4.5pt}
 \begin{tabular}{l cc cc cc cc}
@@ -933,84 +456,50 @@ models across all nine genes.
 \end{tabular}
 \end{table*}
 
-The Baseline RF achieves a mean AUPRC of \textbf{0.886}, outperforming
-the Two-Tower Hybrid (\textbf{0.857}) in seven of nine genes. The
-Two-Tower model leads on \textit{TNNI3} (0.942 vs 0.932),
-\textit{TNNT2} (0.921 vs 0.921, essentially tied), and \textit{MYL2}
-(0.874 vs 0.859). Notably, the Two-Tower model achieves substantially
-better calibration on most troponin and thin-filament genes
-(TNNT2 ECE 0.044, TNNI3 ECE 0.077, TPM1 ECE 0.050), while the RF
-maintains better calibration in myosin heavy chain and myosin-binding
-protein C genes -- reflecting the complementary strengths of neural
-calibration with Platt scaling versus tree-ensemble probability
-smoothing.
+ The Baseline RF outperformed the other models with higher mean AUPRC (0.886 vs. 0.857) and seven out of nine individual genes. On two thin filament targets, TNNI3 (0.9420 vs. 0.9323) the Two-Tower model showed improved performance and on TNNT2 (0.9206 vs. 0.9205) an identical performance. For the troponin and thin-filament genes, the neural model is consistently stronger on calibration: TNNT2 ECE 0.044, TNNI3 ECE 0.077, TPM1 ECE 0.050. The RF is better preserved in thick-filament structural genes (MYH7, MYBPC3). This separation is sensible as Platt scaling explicitly modifies the neural outputs, while the RF depends on the natural probability smoothing of tree averaging. 
+
 
 \subsection{Reliability and Calibration Analysis}
 
-Reliability diagrams for the \textit{TNNT2} LOGO hold-out cohort
-are shown in Fig.~\ref{fig:cal_tt} (Two-Tower) and
-Fig.~\ref{fig:cal_rf} (Baseline RF). The Platt-calibrated Two-Tower
-model achieves a Brier score of \textbf{0.145} and ECE of
-\textbf{0.044} on this held-out cohort, indicating that the predicted
-probability bins closely track the empirical positive fraction. The
-Baseline RF shows a comparable Brier score (0.161) but higher ECE
-(0.158), suggesting mild overconfidence in intermediate probability
-bins that Platt scaling addresses in the neural model.
+The reliability diagrams for the TNNT2 LOGO holdout show the same pattern (Fig. 1 and Fig. 2). The Platt-calibrated TwoTower model is very close to the diagonal, with Brier score of 0.145 and ECE of 0.044. The RF’s Brier score of 0.161 is not far off, but its ECE of 0.158 shows it is overconfident in the middle probability range . Here is where the neural post calibration step helps.
+
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=\columnwidth]{calibration_plot_m2_Two-Tower_Hybrid.png}
-\caption{Reliability diagram (TNNT2 LOGO hold-out): Platt-calibrated
-Two-Tower Hybrid model. Brier$=0.145$, ECE$=0.044$.}
+\caption{Reliability diagram (\textit{TNNT2} LOGO hold-out): Platt-calibrated Two-Tower Hybrid model ($\text{Brier} = 0.145$, $\text{ECE} = 0.044$).}
 \label{fig:cal_tt}
 \end{figure}
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=\columnwidth]{calibration_plot_m2_Baseline_RF.png}
-\caption{Reliability diagram (TNNT2 LOGO hold-out): Baseline Random
-Forest. Brier$=0.161$, ECE$=0.158$.}
+\caption{Reliability diagram (\textit{TNNT2} LOGO hold-out): Baseline Random Forest ($\text{Brier} = 0.161$, $\text{ECE} = 0.158$).}
 \label{fig:cal_rf}
 \end{figure}
 
 \subsection{Ablation Study: Quantifying Modality Contributions}
 
-To isolate the contributions of the biophysical and language-model
-branches, we performed a modality ablation on the
-\textit{TNNT2} held-out cohort by training separate models with one
-input zeroed:
+To understand what each input branch contributes, we ran three configurations on the TNNT2 \textit{TNNT2} holdout:
 
 \begin{itemize}
-  \item \textbf{Full fusion model:} point-estimate AUPRC \textbf{0.931}.
-  \item \textbf{Tabular-only} (ESM branch zeroed):
-    AUPRC \textbf{0.870}.
-  \item \textbf{ESM-only} (tabular branch zeroed):
-    AUPRC \textbf{0.940}.
+  \item \textbf{Full fusion model:} AUPRC \textbf{0.931}.
+  \item \textbf{Tabular-only} (ESM branch zeroed): AUPRC \textbf{0.870}.
+  \item \textbf{ESM-only} (tabular branch zeroed): AUPRC \textbf{0.940}.
 \end{itemize}
 
-The ESM-only ablation marginally outperforms the full fusion model
-($+0.009$ AUPRC), while the tabular-only model lags by $0.061$
-AUPRC. This finding demonstrates that the 650M-parameter evolutionary
-language model encodes the vast majority of pathogenicity-relevant
-signal within its latent representations. The strong tabular-only
-performance (0.870) confirms that the 51 handcrafted structural
-features carry substantial discriminative content; however, the
-ESM representations appear to subsume and extend this information
-into a higher-dimensional embedding space that simple concatenation
-does not always improve upon.
+The most informative result is ESM-only. It performs better than the full fusion model and the Baseline RF at 0.940, which shows that the 650M parameter language model alone contains enough information. Removing the ESM branch loses 0.061 AUPRC. Interestingly, adding the 51 tabular features back on top of ESM actually slightly hurts performance, by about 0.009 points. We interpret that the handcrafted features are already implicitly encoded in the ESM representations, and naively concatenating them introduces redundancy that the small network cannot fully sort out.
+
+
+CardioBoost outperformed us on MYBPC3 (0.776 versus 0.641) and MYH7 (0.939 versus 0.909), and these differences are logical. CardioBoost was specifically aimed at MYBPC3 pathology, which is driven by truncating variants. MYH7 has the highest density of ClinVar annotation of any gene in our panel, which makes tools that rely on prior classifications more attractive. On the other six genes we could compare, our models took the lead. 
 
 \subsection{External Benchmarking: EVE and AlphaMissense}
 
-Table~\ref{tab:bench_eve} compares our models against EVE and
-AlphaMissense. All comparisons are evaluated on identical LOGO test
-splits with matched variant subsets. Both our models outperform EVE
-and AlphaMissense in seven of nine genes. Mean AUPRC gains of the
-Baseline RF over EVE ($+0.095$) and AlphaMissense ($+0.086$) are
-substantial and consistent.
+Table~\ref{tab:bench_eve} shows the comparison against EVE and AlphaMissense on matched LOGO test subsets. Our Baseline RF beats both on seven of nine genes, with mean AUPRC gains of 0.095 over EVE and 0.086 over AlphaMissense.
 
 \begin{table}[h]
 \centering
-\caption{AUPRC Comparison: Our Models vs.\ EVE and AlphaMissense.
+\caption{AUPRC Comparison: Our Models vs.\ EVE and AlphaMissense. 
   Best value per gene shown in \textbf{bold}.}
 \label{tab:bench_eve}
 \resizebox{\columnwidth}{!}{%
@@ -1037,19 +526,9 @@ substantial and consistent.
 
 \subsection{External Benchmarking: REVEL and MetaRNN}
 
-Table~\ref{tab:bench_revel} presents the comparison with REVEL and
-MetaRNN. Coverage is limited by dbNSFP annotation density: matched
-variant counts range from $n=9$ (\textit{TNNT2}) to $n=74$
-(\textit{MYH7}). Our Baseline RF exceeds both tools in mean AUPRC
-(RF 0.886 vs REVEL 0.842 and MetaRNN 0.849), and leads in five of
-nine genes. Two notable exceptions deserve attention: on
-\textit{MYH7}, REVEL and MetaRNN achieve AUPRC $\approx 0.972$
-versus our RF's 0.909; on \textit{TNNI3}, MetaRNN achieves 0.976
-versus our RF's 0.932. Both genes are among the most densely
-annotated in ClinVar, and REVEL/MetaRNN incorporate allele-frequency
-evidence that is correlated with these labels. As discussed in
-Section~\ref{sec:discussion}, this reflects ClinVar saturation
-rather than superior molecular discrimination.
+Table~\ref{tab:bench_revel} covers REVEL and MetaRNN. Sample sizes vary considerably here---9 variants for \textit{TNNT2}, 74 for \textit{MYH7}---because we could only use variants with dbNSFP annotations. Our Baseline RF wins on average (0.886 vs. 0.842 for REVEL, 0.849 for MetaRNN) and takes five of nine genes.
+
+The two exceptions are \textit{MYH7} and \textit{TNNI3}, where REVEL and MetaRNN each hit around 0.972--0.976 against our 0.909 and 0.932 respectively. Both are the most heavily annotated genes in ClinVar by a wide margin, and both REVEL and MetaRNN rely on population frequency data that is directly correlated with those annotations. Our LOGO setup deliberately excludes such signals, so the gap is expected---and arguably reflects ClinVar saturation rather than real molecular insight from those tools.
 
 \begin{table}[h]
 \centering
@@ -1081,19 +560,9 @@ rather than superior molecular discrimination.
 
 \subsection{External Benchmarking: CardioBoost}
 
-Table~\ref{tab:bench_cb} compares our models against CardioBoost,
-the most directly competing disease-specific tool. CardioBoost scores
-are unavailable for \textit{TNNC1} (zero matched variants), which is
-excluded from the mean calculation. Our Baseline RF (mean AUPRC
-0.883 over eight comparable genes) outperforms CardioBoost (0.876).
-CardioBoost leads in two genes: \textit{MYBPC3} (0.776 vs 0.641 RF)
-and \textit{MYH7} (0.939 vs 0.909 RF). Both advantages can be
-attributed to the CardioBoost training strategy: \textit{MYBPC3} is
-dominated by truncating variants for which CardioBoost was explicitly
-engineered, and \textit{MYH7} has the densest ClinVar label coverage
-of any panel gene, benefiting tools with implicit ClinVar-prior
-alignment. Our models outperform CardioBoost in the remaining six
-comparable genes.
+Table~\ref{tab:bench_cb} shows results against CardioBoost. We excluded \textit{TNNC1} from the average because CardioBoost has no precomputed scores for it. Across the eight remaining genes, our RF averaged 0.883 against CardioBoost's 0.876.
+
+CardioBoost beat us on \textit{MYBPC3} (0.776 vs. 0.641) and \textit{MYH7} (0.939 vs. 0.909), and these gaps are understandable. \textit{MYBPC3} pathology is dominated by truncating variants, which CardioBoost was explicitly designed to handle. \textit{MYH7} has the densest ClinVar annotation of any gene in our panel, which favors tools that lean on prior classifications. On the other six genes where we could compare, our models led.
 
 \begin{table}[h]
 \centering
@@ -1112,7 +581,7 @@ comparable genes.
 \textit{MYH7}   & 0.886 & 0.909 & \textbf{0.939} &  99.1\% & 983 \\
 \textit{MYL2}   & 0.835 & \textbf{0.859} & 0.763 &  98.1\% &  53 \\
 \textit{MYL3}   & 0.806 & \textbf{0.846} & 0.832 &  97.3\% &  36 \\
-\textit{TNNC1}  & 0.693 & \textbf{0.934} & N/A   &     --   &   0 \\
+\textit{TNNC1}  & 0.693 & \textbf{0.934} & N/A   &    --   &   0 \\
 \textit{TNNI3}  & \textbf{0.938} & 0.932 & \textbf{0.952} &  97.5\% & 115 \\
 \textit{TNNT2}  & \textbf{0.921} & 0.921 & 0.905 &  96.3\% & 129 \\
 \textit{TPM1}   & 0.903 & \textbf{0.965} & \textbf{0.969} &  79.0\% &  79 \\
@@ -1126,12 +595,7 @@ comparable genes.
 
 \subsection{Summary: Overall Benchmarking Performance}
 
-Table~\ref{tab:bench_summary} consolidates the cross-tool comparison
-into a single overview. The Baseline RF is the consistently
-strongest performer across the full panel, with positive AUPRC
-deltas against all five external tools. The Two-Tower Hybrid model
-surpasses the proteome-wide tools and is competitive with
-CardioBoost, while offering superior probabilistic calibration.
+Table~\ref{tab:bench_summary} aggregates the full picture. The Baseline RF delivered positive mean AUPRC gains against every external tool. The Two-Tower model was competitive with the proteome-wide tools and roughly on par with CardioBoost, while offering better-calibrated probabilities than either of our baselines.
 
 \begin{table}[h]
 \centering
@@ -1158,31 +622,9 @@ CardioBoost     & HCM-specific  & 0.876 & \textbf{+0.007} & $-$0.025 \\
 
 \subsection{XAI Case Study: ISM Landscapes for MYH7 and TNNT2}
 
-Fig.~\ref{fig:ism_myh7} and Fig.~\ref{fig:ism_tnnt2} display the
-Two-Tower ISM landscapes for \textit{MYH7} and \textit{TNNT2},
-respectively. In the \textit{MYH7} landscape, the model identifies
-discrete residue positions where nearly every substitution is
-predicted highly pathogenic (cell values $>0.90$). These hot-spot
-columns co-localise with the myosin converter domain (UniProt
-annotation positions 699--790 of P12883), a structurally constrained
-mechanical socket that translates ATP hydrolysis into lever-arm
-rotation. Substitutions at these positions are predicted pathogenic
-irrespective of the specific alternative amino acid, consistent with
-the functional intolerance of converter-domain geometry to
-perturbation \cite{spudich2019}.
+Figure 3 shows the ISM landscape for MYH7. Several positions light up red regardless of the amino acid substituted, with pathogenicity scores above 0.90 for nearly any change. These hotspot columns go well, precisely with the myosin converter domain (UniProt P12883, residues 699 to 790), the rigid mechanical part that connects ATP hydrolysis to lever-arm rotation. The model has not been given any 3-D coordinate data, yet it identifies the region where the geometry is least tolerant of changes [22].
 
-Horizontal rows of elevated risk in the \textit{MYH7} heatmap
-correspond to charge-reversing residues (D, E $\to$ K, R)
-and bulky hydrophobic substitutions at surface-exposed positions,
-reflecting the model's implicit learning of
-electrostatic and steric constraints in the actin-binding cleft.
-The \textit{TNNT2} landscape shows a distinct hot-spot pattern
-concentrated in the troponin T2 N-terminal regulatory region, which
-mediates calcium-sensitive interaction with tropomyosin. Critically,
-both structural interpretations emerge without explicit 3-D
-coordinate supervision, confirming that the ESM-2 evolutionary
-embedding has encoded meaningful sequence-structure-function
-relationships.
+Examining the row patterns in the MYH7 heatmap, charge-reversing substitutions (D, E to K, R) and the addition of bulky hydrophobic residues at surface-exposed positions consistently score high. The model seems to have captured the electrostatic and steric limits at the actin-binding interface. The TNNT2 landscape (Fig. 4) shows hotspots focused in the N-terminal region, which is involved in calcium-sensitive tropomyosin binding; this reflects a different functional logic identified through the same method.
 
 \begin{figure}[h]
 \centering
@@ -1206,14 +648,7 @@ relationships.
 
 \subsection{High-Throughput VUS Prioritisation}
 
-Applying the trained and calibrated Two-Tower model to 4,524
-unresolved ClinVar VUS produces a rank-ordered list of candidates
-stratified by predicted pathogenicity. Table~\ref{tab:vus} lists the
-ten highest-priority candidates, all in \textit{MYH7}, with predicted
-pathogenicity $>0.994$. At a threshold of $\hat{p}\geq 0.90$, a
-substantial fraction of VUS are flagged as high-priority for
-functional validation -- representing a targeted triage layer that
-focuses expensive laboratory resources on highest-yield candidates.
+We ran all 4,524 unresolved ClinVar VUS through the calibrated Two-Tower model to generate a prioritized ranking for functional follow-up. The top ten candidates are in Table~\ref{tab:vus}---all happen to be in \textit{MYH7}, each scoring above 0.994. Using a threshold of $\hat{p} \geq 0.90$ flags a substantial portion of the VUS cohort for further investigation. The intention is not to replace functional validation but to focus limited lab resources on the variants most likely to yield clinically actionable findings.
 
 \begin{table}[h]
 \centering
@@ -1242,162 +677,58 @@ VUS status.}
 }
 \end{table}
 
-
 % ==============================================================
-% SECTION VIII  --  DISCUSSION
+% SECTION VI  --  DISCUSSION
 % ==============================================================
 \section{Discussion}
 \label{sec:discussion}
 
 \subsection{The Value of Disease-Specific Language Modelling}
 
-Our results establish that a disease-specific, zero-leakage framework
-substantially outperforms proteome-wide predictors across most
-sarcomeric HCM genes. The two most informative comparisons are with
-EVE and AlphaMissense: both represent state-of-the-art unsupervised
-and semi-supervised approaches applied across the human proteome,
-yet our Baseline RF exceeds them by 9.5 and 8.6 mean AUPRC points,
-respectively, under identical LOGO evaluation conditions. The
-performance advantage persists despite the fact that EVE and
-AlphaMissense have access to far larger training corpora: the entire
-metazoan and human proteome in the case of EVE, and the full human
-proteome with AlphaFold structural context in the case of
-AlphaMissense. This demonstrates that the disease-specific alignment
-of training data, feature engineering, and evaluation protocol
-provides a qualitatively different type of information than
-proteome-scale generalisation.
+Despite that, our Baseline RF outperformed them by 9.5 and 8.6 mean AUPRC points under the same LOGO conditions. Adjusting the training data and feature set to match the target issue seems to be more important than just size, at least for a panel this specialized. 
 
-The ESM-2 ablation result provides useful insights. The ESM-only
-variant of the Two-Tower model achieves AUPRC 0.940 on
-held-out \textit{TNNT2}, outperforming even the full fusion model
-(0.931) and the Baseline RF (0.921). This implies that the 650M-
-parameter evolutionary language model already encodes a superset of
-the sarcomeric pathogenicity signal available in 51 handcrafted
-biophysical descriptors. The handcrafted features do not provide
-additive information in the simple concatenation fusion scheme, and
-may introduce mild optimisation noise relative to the clean ESM-only
-signal. This finding motivates more sophisticated fusion architectures -- 
-cross-modal attention or gated modality weighting -- as productive
-future directions.
+The ablation experiment makes this situation more complex.
 
 \subsection{Addressing the Two Leakage Channels}
 
-Prior computational evaluations of variant pathogenicity predictors
-have rarely disentangled feature-level and split-level leakage
-effects simultaneously. Our protocol enforces both in a single
-experimental design: (i) removal of six leakage-prone feature groups
-from the input matrix, and (ii) LOGO cross-validation that enforces
-complete gene-level isolation. This combination has a measurable cost
-in apparent performance relative to random-split evaluation, but
-yields performance estimates with substantially higher deployment
-relevance.
+Most previous work on variant pathogenicity prediction has not dealt with feature leakage and split-level leakage simultaneously. We removed six feature groups known to carry ACMG/AMP signal, and we held out entire gene families during evaluation rather than random variant subsets. The cost is somewhat lower headline numbers compared to what you get from standard random splits---but those inflated numbers are not informative about real clinical performance.
 
-The performance gap between REVEL/MetaRNN and our models on
-\textit{MYH7} and \textit{TNNI3} ($\Delta\mathrm{AUPRC}\approx 0.07$
-in favour of external tools) is directly attributable to ClinVar
-label saturation in these genes. \textit{MYH7} and \textit{TNNI3}
-are the two most densely annotated sarcomeric genes in ClinVar,
-providing a rich training signal to tools that incorporate population
-frequency and prior classification evidence. Under LOGO conditions
-that strip our models of such signal, the remaining molecular
-discriminator must be purely sequence-based and structural. That our
-models achieve AUPRC $>0.90$ on these genes without ACMG-derived
-inputs confirms that the biophysical and evolutionary representations
-carry genuine predictive content beyond database consensus.
+The REVEL and MetaRNN exceptions on \textit{MYH7} and \textit{TNNI3} ($\Delta$AUPRC around 0.07 in their favor) are worth a closer look. Both genes are the most heavily annotated in ClinVar, and both tools rely on population frequency features that correlate directly with ClinVar label density. Our LOGO setup removes those signals by design. That our models still reached AUPRC $>0.90$ on both genes purely from sequence and structural features is arguably the more meaningful result---it means the model is picking up on actual molecular patterns not just reflecting ClinVar label density.
 
 \subsection{Translational Impact of ISM Heatmaps}
 
-The ISM landscapes bridge the gap between statistical pathogenicity
-prediction and mechanistic hypothesis generation. For a molecular
-diagnostics laboratory or inherited cardiomyopathy clinic, the
-clinical utility of an ISM heatmap is threefold. First, it provides
-a \textit{residue-level triage}: positions that are ISM-hot across
-all substitution classes represent structural bottlenecks where
-functional validation assays should be prioritised. Second, it
-enables \textit{panel-informed design}: saturation mutagenesis
-experiments can be targeted to the specific substitution classes
-predicted to be most destabilising, reducing assay cost. Third,
-and most importantly for VUS re-classification, ISM-predicted
-pathogenicity constitutes \emph{independent computational evidence}
-under ACMG/AMP criterion PP3 (pathogenic supporting): because our
-model is built without ACMG-derived inputs, its elevated prediction
-represents mechanistic signal rather than restated clinical consensus.
+For clinical diagnostic labs, the ISM landscapes offer three concrete uses. First, positions that score high regardless of substitution identity are structural bottlenecks that likely warrant prioritized functional characterization. Second, by predicting which substitution classes are most destabilizing at each position, the heatmaps can guide the design of targeted mutagenesis experiments and reduce the number of constructs that need to be tested. Third, and most directly applicable to VUS reclassification: because our model was trained without ACMG-derived features, a high pathogenicity score constitutes independent computational evidence that can contribute to the PP3 evidence criterion. It is not circular.
 
-\subsection{Understanding the Performance of the Random Forest vs. the Neural Network}
+\subsection{Understanding the Performance of the Random Forest vs.\ the Neural Network}
 
-A notable finding from the internal LOGO validation is that the Baseline Random Forest outperformed the Two-Tower Hybrid Neural Network on raw discrimination (mean AUPRC 0.886 vs. 0.857) across seven of the nine panel genes. While neural architectures are frequently assumed to be superior for embedding-based tasks, this result aligns with well-documented phenomena in high-dimensional, low-sample-size regimes. Our dataset comprises 1,954 labeled variants represented in a 1,331-dimensional feature space. In this data regime, tree-based ensemble methods like Random Forests are exceptionally robust against overfitting, naturally performing feature selection through axis-aligned splits.
+The RF outperforming the neural network on raw AUPRC was not what we initially expected, but it is less surprising when you consider the dataset size. We have 1,954 labeled variants in a 1,331-dimensional feature space. This is a high-dimensional, low-sample situation where tree ensembles usually perform well. Random Forests resist overfitting here because each tree sees only a part of the features, and the average of the ensemble smooths out the variance from individual trees. 
 
-Furthermore, the strong performance of the RF model indicates that the frozen ESM-2 representations are already highly linearly separable with respect to pathogenicity. The Two-Tower model, attempting to learn a complex, cross-modal joint representation from heterogeneous data types (dense tabular constraints vs. high-dimensional semantic spaces), likely encounters mild optimization challenges or overfitting, despite the inclusion of dropout and batch normalization. However, as demonstrated by the Expected Calibration Error (ECE) metrics, the neural model achieves vastly superior probability calibration via Platt scaling, making its outputs significantly more reliable for downstream clinical thresholding than the uncalibrated probability smoothing of the tree ensemble. 
+On the other hand, the issue of calibration is where the Two-Tower model consistently excels. Platt scaling directly optimizes the probability outputs for accuracy, while the RF probabilities come from leaf class proportions without an explicit calibration step. For clinical decision-making, where you need to understand not only the rank order of variants but also how much to trust each score, this difference really matters. A threshold of pˆ ≥ 0.90 has a clear meaning with a calibrated model. However, that same threshold is harder to interpret with uncalibrated RF outputs.
 
 \subsection{Limitations}
 
-We identify four principal limitations. First, the ESM-2 backbone
-is frozen: fine-tuning on sarcomeric sequences could sharpen the
-mutation perturbation signal but requires careful leakage control
-if HCM-labelled sequences are included in the fine-tuning corpus.
-Second, the framework does not incorporate explicit 3-D structural
-coordinates; geometric deep learning over AlphaFold-derived contact
-maps could capture long-range allosteric effects not fully
-represented by sequence-level embeddings. Third, our training labels
-are derived from ClinVar and may embed historical annotation errors
-or inter-laboratory adjudication heterogeneity. Fourth, the LOGO
-evaluation protocol, while more rigorous than random splits, still
-evaluates within-species generalisation; extension to orthologous
-non-human sarcomeric gene panels would further test biological
-generalisability. Prospective validation against newly reclassified
-variants accruing in ClinVar from 2025 onward is essential before
-clinical deployment.
+
+There are four limitations we want to highlight. First, ESM-2 remained fixed throughout. Fine-tuning on sarcomeric sequences could improve the mutation signal, but it would need strict leakage controls to ensure HCM-labeled sequences do not leak into the representations. Second, we do not use 3-D structural coordinates anywhere in the pipeline. Adding geometry-aware features, such as contact maps from AlphaFold and residue-pair distances, could help capture long-range allosteric effects that sequence-level embeddings might overlook.
+
+
 
 
 % ==============================================================
-% SECTION IX  --  CONCLUSION
+% SECTION VII  --  CONCLUSION
 % ==============================================================
 \section{Conclusion}
 \label{sec:conclusion}
 
-We have presented a comprehensive zero-leakage framework for
-missense variant pathogenicity prediction in hypertrophic
-cardiomyopathy that simultaneously addresses feature-level and
-split-level data leakage. Two complementary classifiers -- a Baseline
-Random Forest and a Two-Tower Hybrid Neural Network fusing 51
-handcrafted biophysical descriptors with differential ESM-2
-evolutionary embeddings -- are trained on 1,954 high-confidence labeled
-sarcomeric variants and evaluated under strict Leave-One-Gene-Out
-cross-validation. The Baseline RF achieves a mean AUPRC of
-\textbf{0.886}, outperforming all five external benchmarks (EVE,
-AlphaMissense, REVEL, MetaRNN, CardioBoost) in seven of nine target
-genes. Platt-scaled Two-Tower probabilities yield a Brier score of
-\textbf{0.145} on held-out \textit{TNNT2}, supporting clinical
-interpretability. ISM heatmaps generated without any structural
-supervision reproduce the biologically expected vulnerability
-landscape of sarcomeric proteins, including the myosin converter
-domain and troponin regulatory interface, demonstrating that the
-learned representations encode genuine mechanistic knowledge rather
-than statistical artifact.
+We built a two-model framework for HCM sarcomere variant pathogenicity prediction that systematically avoids both feature-level and split-level data leakage. The Baseline RF reached a mean AUPRC of \textbf{0.886} under LOGO cross-validation, outperforming EVE, AlphaMissense, REVEL, MetaRNN, and CardioBoost on seven of nine target genes. The Platt-calibrated Two-Tower model achieved a Brier score of \textbf{0.145} on the held-out \textit{TNNT2} cohort---well-calibrated enough to support clinical probability thresholds. The ISM heatmaps identified structurally sensitive residues at the myosin converter domain and troponin regulatory interface without requiring any 3-D coordinate inputs, which suggests the ESM-2 representations carry real structural and functional information from sequence alone.
 
-A primary contribution of this work is the
-demonstration that leakage-free, disease-specific representation
-learning outperforms both general-purpose evolutionary tools and the
-prior HCM-specific classifier in a homology-safe evaluation regime.
-This constitutes a principled shift in the standard of evidence
-required for computational variant pathogenicity claims: from
-database consensus recapitulation to mechanism-grounded inference
-validated by out-of-gene generalisation. The resulting probabilistic
-risk rankings for 4,524 sarcomeric VUS provide an immediately
-actionable triage resource for inherited cardiomyopathy clinics and
-molecular diagnostics laboratories.
+More broadly, we think these results show that a carefully designed disease-specific model, evaluated honestly, can outperform larger proteome-wide systems when the target problem has well-defined structural logic. The practical output is a ranked list of 4,524 sarcomeric VUS, prioritized for functional validation, that diagnostic labs can use directly. The code, trained weights, and evaluation scripts are available in our project repository.
 
-
-%  -- - Data Availability  --  --  --  --  --  --  --  --  --  --  --  --  -- -
+% --- Data Availability ----------------------------------------------------
 \section*{Data and Code Availability}
 
-All processed datasets, trained model weights, evaluation scripts,
-and ISM generation code used in this study are available in the
-associated project repository. The ESM-2 backbone is obtained from
-the publicly available Hugging Face model hub at
-\texttt{facebook/esm2\_t33\_650M\_UR50D}. CardioBoost precomputed
-scores were downloaded from \url{https://cardiodb.org/cardioboost/}.
-REVEL and MetaRNN scores were obtained from dbNSFP v4.5.
+All processed datasets, trained model weights, evaluation scripts, and code for ISM landscape generation are available in the repository. Cardio The ESM-2 backbone is available at https://huggingface.co/facebook/esm2_t33_650M_UR50D.
+Boost scores were from https://cardiodb.org/cardioboost/ . 
+REVEL and MetaRNN scores were from dbNSFP v4.5.
 
 
 % ==============================================================
@@ -1419,7 +750,7 @@ P.~C. Ng and S.~Henikoff,
 I.~A. Adzhubei \textit{et al.},
 ``A method and server for predicting damaging missense mutations,''
 \textit{Nat. Methods}, vol.~7, no.~4, pp.~248--249, 2010.
-
+`
 \bibitem{richards2015}
 S.~Richards \textit{et al.},
 ``Standards and guidelines for the interpretation of sequence variants:
